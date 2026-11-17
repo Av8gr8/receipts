@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#08234e">
-<meta name="app-version" content="2026-11-17-5">
+<meta name="app-version" content="2026-11-17-6">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -35,6 +35,8 @@ button{font:inherit}
 .cat .ct.has{color:var(--acc)}
 .scan{width:58px;height:50px;border-radius:12px;border:0;background:var(--acc);color:#1a1300;font-size:24px}
 .scan:active{filter:brightness(1.15)}
+.scan.gal{background:var(--card2);border:1px solid var(--line);width:50px}
+.cat{gap:8px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .th{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--card2);border:1px solid var(--line)}
 .th img{width:100%;height:100%;object-fit:cover;display:block}
@@ -190,7 +192,7 @@ VIEWS.trip=async c=>{
     ${t.label?`<div>${esc(t.label)}</div>`:''}<div class="mut">${esc(fmtD(t.start))}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${d?` · ${d} days`:''} · tap to edit</div></div>`;
   for(const k of list){const n=recs.filter(r=>r.cat===k.name).length;
     h+=`<div class="cat" data-act="openCat" data-cat="${esc(k.name)}"><span class="ico">${k.ico}</span><span class="nm">${esc(k.name)}</span>
-    <span class="ct ${n?'has':''}">${n}</span><button class="scan" data-act="scan" data-cat="${esc(k.name)}" aria-label="Scan ${esc(k.name)}">📷</button></div>`;}
+    <span class="ct ${n?'has':''}">${n}</span><button class="scan gal" data-act="gal" data-cat="${esc(k.name)}" aria-label="Import ${esc(k.name)} screenshot">🖼️</button><button class="scan" data-act="scan" data-cat="${esc(k.name)}" aria-label="Scan ${esc(k.name)}">📷</button></div>`;}
   h+=`<div class="sec">End of trip</div>
   <button class="btn pri" data-act="share" ${recs.length?'':'disabled style="opacity:.5"'}>Send all ${recs.length} receipt${recs.length==1?'':'s'}</button>
   <button class="btn" data-act="zip" ${recs.length?'':'disabled style="opacity:.5"'}>Download as ZIP</button>
@@ -199,6 +201,7 @@ VIEWS.trip=async c=>{
 };
 BIND.trip=c=>{$('#view').onclick=async e=>{const a=e.target.closest('[data-act]');if(!a)return;const act=a.dataset.act;
   if(act==='scan'){e.stopPropagation();startCapture({tripId:c.id,cat:a.dataset.cat});}
+  else if(act==='gal'){e.stopPropagation();startGallery({tripId:c.id,cat:a.dataset.cat});}
   else if(act==='openCat')go('cat',{id:c.id,cat:a.dataset.cat});
   else if(act==='edit')go('tripForm',{id:c.id});
   else if(act==='share')shareTrip(c.id);
@@ -207,7 +210,7 @@ BIND.trip=c=>{$('#view').onclick=async e=>{const a=e.target.closest('[data-act]'
 VIEWS.cat=async c=>{
   const t=await dbGet('trips',c.id);setTitle(`${t.number} · ${c.cat}`);
   const recs=(await byTrip(c.id)).filter(r=>r.cat===c.cat).sort((a,b)=>a.created-b.created);
-  let h=`<div class="row2" style="margin-bottom:14px"><button class="btn pri" data-act="scan" style="margin:0">📷 Scan</button><button class="btn" data-act="gal" style="margin:0">Gallery / PDF</button></div>`;
+  let h=`<div class="row2" style="margin-bottom:14px"><button class="btn pri" data-act="scan" style="margin:0">📷 Scan</button><button class="btn" data-act="gal" style="margin:0">🖼️ Screenshot / PDF</button></div>`;
   if(!recs.length)h+=`<div class="empty">No ${esc(c.cat.toLowerCase())} receipts yet.</div>`;
   h+='<div class="grid">';
   recs.forEach((r,i)=>{const p=r.pages[0];const pc=r.pages.length;
@@ -255,7 +258,7 @@ VIEWS.settings=async()=>{
   ${f('payee','Name or entity to be paid','')}${f('name','Crewmember name','')}${f('email','Email','')}
   ${f('phone','Contact number','')}${f('address','Mailing address','',true)}${f('rate','Daily rate (USD)','750')}
   <button class="btn pri" id="sSave">Save</button>
-  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-5</div>`;
+  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-6</div>`;
 };
 BIND.settings=()=>{$('#sSave').onclick=()=>{
   const lines=$('#cats').value.split('\n').map(s=>s.trim()).filter(Boolean);LS.set('cats',lines.length?lines:DEFAULT_CATS);
@@ -268,12 +271,11 @@ function startCapture(ctx){capCtx=ctx;const i=$('#camIn');i.value='';i.click();}
 function startGallery(ctx){capCtx=ctx;const i=$('#galIn');i.value='';i.click();}
 $('#camIn').onchange=async e=>{const f=e.target.files[0];if(f)openEditor(f);};
 $('#galIn').onchange=async e=>{const fs=[...e.target.files];if(!fs.length)return;
-  if(fs.length===1&&fs[0].type.startsWith('image/'))return openEditor(fs[0]);
   busy(true);try{for(const f of fs){let page;
       if(f.type==='application/pdf')page={blob:f,type:'application/pdf'};
       else{const cv=await fileToCanvas(f,2000);page={blob:await toJpeg(cv),type:'image/jpeg'};}
       await addPage(capCtx,page);capCtx={...capCtx,receiptId:null};}
-    toast(`Added ${fs.length}`);}finally{busy(false);render();}};
+    toast(fs.length===1?`Added to ${capCtx.cat}`:`Added ${fs.length} to ${capCtx.cat}`);}finally{busy(false);render();}};
 
 async function addPage(ctx,page){
   if(ctx.receiptId){const r=await dbGet('receipts',ctx.receiptId);if(r){r.pages.push(page);await dbPut('receipts',r);return r.id;}}
