@@ -3,67 +3,95 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#08234e">
-<meta name="app-version" content="2026-11-17-6">
+<meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0d11" media="(prefers-color-scheme: dark)">
+<meta name="app-version" content="2026-11-17-8">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Jet Receipts</title>
-<style>
-:root{--bg:#11161c;--card:#1b232c;--card2:#232d38;--line:#2e3a47;--tx:#e8edf2;--mut:#8b9aab;--acc:#f5a623;--ok:#3ecf8e;--bad:#ff5d5d}
+<style>:root{color-scheme:dark;--bg:#0b0d11;--card:#15181e;--card2:#1e222a;--line:#262b35;--tx:#f2f4f8;--mut:#8a92a2;--acc:#e2b555;--grn:#2bc07c;--ok:#2bc07c;--bad:#ff6b6b;
+  --hdr:rgba(11,13,17,.88);--hdrLine:#20242c;--hero:linear-gradient(135deg,#1f2530,#15181e);--heroTx:var(--tx);--heroMut:var(--mut);--heroLine:var(--line);
+  --icoBg:rgba(226,181,85,.12);--icoFg:var(--acc);--onAcc:#14100a;--toastBg:#eef1f6;--toastTx:#0b0d11;--shadow:none}
+@media (prefers-color-scheme:light){:root{color-scheme:light;--bg:#f3f5f9;--card:#fff;--card2:#eef1f6;--line:#e2e7ef;--tx:#0b1b36;--mut:#6a7891;--acc:#d4a23c;--grn:#18a565;--ok:#18a565;--bad:#d93c3c;
+  --hdr:rgba(243,245,249,.88);--hdrLine:#e2e7ef;--hero:linear-gradient(135deg,#0c2347,#1a3f7a);--heroTx:#fff;--heroMut:#b9c6dc;--heroLine:transparent;
+  --icoBg:#fbf3e2;--icoFg:#b9861f;--onAcc:#0b1b36;--toastBg:#0b1b36;--toastTx:#fff;--shadow:0 1px 2px rgba(11,27,54,.06)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;padding:10px 8px;padding-top:max(10px,env(safe-area-inset-top));background:var(--bg);border-bottom:1px solid var(--line)}
-header h1{flex:1;margin:0;font-size:19px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ib{background:none;border:0;color:var(--tx);font-size:26px;width:44px;height:44px;border-radius:10px}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:4px;padding:10px 10px;padding-top:max(10px,env(safe-area-inset-top));background:var(--hdr);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--hdrLine)}
+header h1{flex:1;margin:0;font-size:18px;font-weight:650;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:10px}
+header h1 img{width:28px;height:28px;border-radius:8px}
+.ib{display:flex;align-items:center;justify-content:center;background:none;border:0;color:var(--tx);width:42px;height:42px;border-radius:12px}
 .ib:active{background:var(--card)}
-main{padding:14px 14px 120px;max-width:640px;margin:0 auto}
-button{font:inherit}
-.btn{display:block;width:100%;padding:15px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx);font-weight:600;font-size:16px;margin-top:10px}
-.btn:active{filter:brightness(1.2)}
-.btn.pri{background:var(--acc);border-color:var(--acc);color:#1a1300}
-.btn.bad{color:var(--bad)}
+main{padding:16px 16px 120px;max-width:640px;margin:0 auto}
+button{font:inherit;cursor:pointer}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--tx);font-weight:600;font-size:15.5px;margin-top:10px}
+.btn:active{filter:brightness(1.15)}
+.btn[disabled]{opacity:.4}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:var(--onAcc)}
+.btn.bad{color:var(--bad);background:transparent}
 .row2{display:flex;gap:10px}.row2>.btn{flex:1}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
-.trip .num{font-size:20px;font-weight:700;letter-spacing:.3px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.trip .num{font-size:20px;font-weight:700;letter-spacing:.4px}
+.hero{background:var(--hero);color:var(--heroTx);border:1px solid var(--heroLine);border-radius:18px;padding:18px;margin-bottom:16px}
+.hero .num{font-size:26px;font-weight:750;letter-spacing:.6px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mut);margin-top:8px}
+.hero .mut,.hero .chip{color:var(--heroMut)}
 .mut{color:var(--mut);font-size:14px}
-.empty{text-align:center;color:var(--mut);padding:40px 10px}
-.cat{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 8px 8px 14px;margin-bottom:8px;min-height:66px}
-.cat .ico{font-size:26px;width:32px;text-align:center}
-.cat .nm{flex:1;font-weight:600;font-size:17px}
-.cat .ct{min-width:30px;text-align:center;color:var(--mut);font-weight:600}
-.cat .ct.has{color:var(--acc)}
-.scan{width:58px;height:50px;border-radius:12px;border:0;background:var(--acc);color:#1a1300;font-size:24px}
+.empty{text-align:center;color:var(--mut);padding:44px 10px}
+.cat{display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 10px 10px 12px;margin-bottom:8px}
+.cat:active{background:var(--card2)}
+.cat .ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--icoBg);color:var(--icoFg)}
+.cat .nm{flex:1;font-weight:600;font-size:16px;line-height:1.2}
+.cat .ct{min-width:26px;height:26px;padding:0 8px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--mut);background:var(--card2)}
+.cat .ct.has{color:#fff;background:var(--grn)}
+.scan{display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:13px;border:0;background:var(--acc);color:var(--onAcc)}
+.scan.gal{background:transparent;border:1px solid var(--line);color:var(--tx)}
 .scan:active{filter:brightness(1.15)}
-.scan.gal{background:var(--card2);border:1px solid var(--line);width:50px}
-.cat{gap:8px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.th{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--card2);border:1px solid var(--line)}
+.th{position:relative;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:var(--card2);border:1px solid var(--line)}
 .th img{width:100%;height:100%;object-fit:cover;display:block}
 .th .pdf{display:flex;align-items:center;justify-content:center;height:100%;font-weight:700;color:var(--mut)}
-.th .lb{position:absolute;left:0;right:0;bottom:0;padding:3px 6px;font-size:12px;background:rgba(0,0,0,.65)}
-.pg{width:100%;border-radius:10px;display:block;margin-bottom:6px;background:#fff}
-label{display:block;font-size:13px;color:var(--mut);margin:12px 0 5px}
-input,textarea,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--tx);font:inherit}
+.th .lb{position:absolute;left:0;right:0;bottom:0;padding:4px 7px;font-size:12px;background:linear-gradient(transparent,rgba(0,0,0,.75))}
+.pg{width:100%;border-radius:12px;display:block;margin-bottom:6px;background:#fff}
+label{display:block;font-size:13px;color:var(--mut);margin:14px 0 6px;font-weight:500}
+input,textarea,select{width:100%;padding:12px 13px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:inherit}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acc)}
 textarea{min-height:70px;resize:vertical}
-.hint{font-size:12px;color:var(--mut);margin-top:4px}
-.sec{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);margin:22px 0 8px}
-#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:90%;text-align:center}
+.hint{font-size:12.5px;color:var(--mut);margin-top:6px}
+.sec{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mut);margin:26px 0 10px;font-weight:600}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--toastBg);color:var(--toastTx);font-weight:600;padding:10px 18px;border-radius:22px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:90%;text-align:center}
 #toast.on{opacity:1}
 #editor{position:fixed;inset:0;z-index:20;background:#000;display:flex;flex-direction:column}
 #editor[hidden]{display:none}
 #edWrap{flex:1;position:relative;overflow:hidden;touch-action:none}
 #edCanvas{position:absolute;inset:0;width:100%;height:100%}
-.edBar{display:flex;gap:8px;padding:8px 10px;background:#0b0e12}
+.edBar{display:flex;gap:8px;padding:8px 10px;background:#0b0d11}
 .edBar:last-child{padding-bottom:max(10px,env(safe-area-inset-bottom))}
-.edBar button{flex:1;padding:13px 4px;border-radius:10px;border:1px solid #2a333d;background:#1b232c;color:#fff;font-weight:600;font-size:15px}
-.edBar button.pri{background:var(--acc);border-color:var(--acc);color:#1a1300}
-#busy{position:fixed;inset:0;z-index:40;background:#0008;display:flex;align-items:center;justify-content:center;font-weight:600}
+.edBar button{flex:1;padding:13px 4px;border-radius:12px;border:1px solid #262b35;background:#15181e;color:#fff;font-weight:600;font-size:15px}
+.edBar button.pri{background:#e2b555;border-color:#e2b555;color:#14100a}
+#busy{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600}
 #busy[hidden]{display:none}
 </style>
 </head>
 <body>
-<header><button class="ib" id="backBtn" aria-label="Back">‹</button><h1 id="title">Jet Receipts</h1><button class="ib" id="setBtn" aria-label="Settings">⚙︎</button></header>
+<header><button class="ib" id="backBtn" aria-label="Back"><svg class="i"><use href="#i-back"/></svg></button><h1 id="title">Jet Receipts</h1><button class="ib" id="setBtn" aria-label="Settings"><svg class="i"><use href="#i-set"/></svg></button></header>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-set" viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/></symbol>
+<symbol id="i-meals" viewBox="0 0 24 24"><path d="M6 3v6a2 2 0 0 0 4 0V3M8 11v10M8 3v5"/><path d="M17 21V3c-2.2 0-3.5 3-3.5 7 0 2.5 1.2 3.5 3.5 3.5"/></symbol>
+<symbol id="i-taxi" viewBox="0 0 24 24"><path d="M5 12l1.5-4.3A2 2 0 0 1 8.4 6.3h7.2a2 2 0 0 1 1.9 1.4L19 12"/><rect x="3" y="12" width="18" height="5.5" rx="2"/><path d="M6 17.5V20M18 17.5V20"/><circle cx="7.5" cy="14.8" r=".6"/><circle cx="16.5" cy="14.8" r=".6"/></symbol>
+<symbol id="i-hotel" viewBox="0 0 24 24"><path d="M3 6v14M3 16h18v4M21 16v-3.5A2.5 2.5 0 0 0 18.5 10H11v6"/><circle cx="7" cy="12.5" r="2"/></symbol>
+<symbol id="i-galley" viewBox="0 0 24 24"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8.5 3.5v2.5M11.5 3.5v2.5"/></symbol>
+<symbol id="i-other" viewBox="0 0 24 24"><path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
+<symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 7.5h3L8.6 5h6.8L17 7.5h3a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.6"/></symbol>
+<symbol id="i-img" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><circle cx="9" cy="9.5" r="1.7"/><path d="M20.5 15.5l-4.5-4.5-8.5 9"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14M21 3l-6.5 18-4.5-7-7-4.5z"/></symbol>
+<symbol id="i-zip" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
 <main id="view"></main>
 
 <div id="editor" hidden>
@@ -101,11 +129,12 @@ const dbAll=s=>rq(st(s).getAll());
 const byTrip=id=>rq(st('receipts').index('trip').getAll(id));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
-const DEFAULT_CATS=['🍽 Meals','🚕 Taxi','🏨 Hotel','🥪 Galley Provisions','📄 Other'];
+const DEFAULT_CATS=['Meals','Taxi','Hotel','Galley Provisions','Other'];
 const LS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-function cats(){return LS.get('cats',DEFAULT_CATS).map(s=>{const m=s.trim().match(/^(\S+)\s+(.+)$/);
-  if(m&&/\p{Extended_Pictographic}/u.test(m[1]))return{ico:m[1],name:m[2].trim()};return{ico:'📄',name:s.trim()}}).filter(c=>c.name);}
-const icoFor=n=>(cats().find(c=>c.name===n)||{ico:'📄'}).ico;
+function cats(){return LS.get('cats',DEFAULT_CATS).map(x=>({name:x.replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u,'').trim()})).filter(c=>c.name).map(c=>({...c,ico:icoKey(c.name)}));}
+function icoKey(n){n=n.toLowerCase();if(/meal|food|restaurant|dinner|lunch|breakfast/.test(n))return'meals';if(/taxi|uber|grab|car|transport|train|bus/.test(n))return'taxi';
+  if(/hotel|accom|lodg|room/.test(n))return'hotel';if(/galley|provision|cater|commiss|water|drink/.test(n))return'galley';return'other';}
+const svg=(k,sz)=>`<svg class="i"${sz?` style="width:${sz}px;height:${sz}px"`:''}><use href="#i-${k}"/></svg>`;
 
 /* ============ Helpers ============ */
 const $=s=>document.querySelector(s);
@@ -135,25 +164,27 @@ $('#setBtn').onclick=()=>{if(stack[stack.length-1].v!=='settings')go('settings')
 
 async function render(){
   freeURLs();const cur=stack[stack.length-1];
-  $('#backBtn').style.visibility=stack.length>1?'visible':'hidden';
+  $('#backBtn').style.display=stack.length>1?'':'none';$('header').style.paddingLeft=stack.length>1?'':'16px';
   const fn=VIEWS[cur.v];const html=await fn(cur);
   $('#view').innerHTML=html;window.scrollTo(0,0);
   const top=stack[stack.length-1];BIND[top.v]&&BIND[top.v](top);
 }
-const setTitle=t=>$('#title').textContent=t;
+const setTitle=(t,logo)=>$('#title').innerHTML=(logo?'<img src="icon-192.png" alt="">':'')+esc(t);
 
 /* ============ Views ============ */
 const VIEWS={},BIND={};
 
 VIEWS.home=async()=>{
-  setTitle('Jet Receipts');
+  setTitle('Jet Receipts',true);
   const trips=(await dbAll('trips')).sort((a,b)=>(b.start||'').localeCompare(a.start||'')||b.created-a.created);
   const recs=await dbAll('receipts');
-  let h=`<button class="btn pri" data-act="newTrip" style="margin:0 0 16px">+ New trip</button>`;
+  let h=`<button class="btn pri" data-act="newTrip" style="margin:0 0 18px">${svg('plus')} New trip</button>`;
   if(!trips.length)h+=`<div class="empty">No trips yet.<br>Start one, then scan receipts into it.</div>`;
   for(const t of trips){const n=recs.filter(r=>r.tripId===t.id).length,d=tripDays(t);
-    h+=`<div class="card trip" data-act="openTrip" data-id="${t.id}"><div class="num">${esc(t.number)}${t.label?` <span class="mut" style="font-size:16px;font-weight:500">· ${esc(t.label)}</span>`:''}</div>
-    <div class="mut">${t.start?esc(fmtD(t.start)):''}${t.end?' – '+esc(fmtD(t.end)):''}${d?` · ${d} days`:''} · ${n} receipt${n==1?'':'s'}${t.sent?' · <span style="color:var(--ok)">sent</span>':''}</div></div>`;}
+    h+=`<div class="card trip" data-act="openTrip" data-id="${t.id}"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="num">${esc(t.number)}</div>
+    <span class="cat" style="all:unset"><span class="ct ${n?'has':''}" style="min-width:26px;height:26px;padding:0 9px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;${n?'background:var(--grn);color:#fff':'background:var(--card2);color:var(--mut)'}">${n}</span></span></div>
+    ${t.label?`<div style="margin-top:2px">${esc(t.label)}</div>`:''}
+    <div class="chip">${svg('cal',15)} ${t.start?esc(fmtD(t.start)):''}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${d?` · ${d} days`:''}${t.sent?' · <span style="color:var(--grn)">sent</span>':''}</div></div>`;}
   return h;
 };
 BIND.home=()=>{$('#view').onclick=e=>{const a=e.target.closest('[data-act]');if(!a)return;
@@ -187,16 +218,17 @@ BIND.tripForm=c=>{
 VIEWS.trip=async c=>{
   const t=await dbGet('trips',c.id);if(!t){stack.length=1;return VIEWS.home();}
   setTitle(t.number);const recs=await byTrip(c.id);const d=tripDays(t);
-  const list=cats();for(const r of recs)if(!list.some(x=>x.name===r.cat))list.push({ico:'📄',name:r.cat});
-  let h=`<div class="card" data-act="edit"><div class="trip"><div class="num">${esc(t.number)}</div></div>
-    ${t.label?`<div>${esc(t.label)}</div>`:''}<div class="mut">${esc(fmtD(t.start))}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${d?` · ${d} days`:''} · tap to edit</div></div>`;
+  const list=cats();for(const r of recs)if(!list.some(x=>x.name===r.cat))list.push({ico:icoKey(r.cat),name:r.cat});
+  let h=`<div class="hero" data-act="edit"><div class="mut" style="font-size:12px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600">Trip</div><div class="num">${esc(t.number)}</div>
+    ${t.label?`<div style="margin-top:2px">${esc(t.label)}</div>`:''}<div class="chip">${svg('cal',15)} ${esc(fmtD(t.start))}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${d?` · ${d} days`:''} <span style="opacity:.7">· Edit</span></div></div>
+  <div class="sec" style="margin-top:0">Categories</div>`;
   for(const k of list){const n=recs.filter(r=>r.cat===k.name).length;
-    h+=`<div class="cat" data-act="openCat" data-cat="${esc(k.name)}"><span class="ico">${k.ico}</span><span class="nm">${esc(k.name)}</span>
-    <span class="ct ${n?'has':''}">${n}</span><button class="scan gal" data-act="gal" data-cat="${esc(k.name)}" aria-label="Import ${esc(k.name)} screenshot">🖼️</button><button class="scan" data-act="scan" data-cat="${esc(k.name)}" aria-label="Scan ${esc(k.name)}">📷</button></div>`;}
+    h+=`<div class="cat" data-act="openCat" data-cat="${esc(k.name)}"><span class="ico">${svg(k.ico)}</span><span class="nm">${esc(k.name)}</span>
+    <span class="ct ${n?'has':''}">${n}</span><button class="scan gal" data-act="gal" data-cat="${esc(k.name)}" aria-label="Import ${esc(k.name)} screenshot">${svg('img')}</button><button class="scan" data-act="scan" data-cat="${esc(k.name)}" aria-label="Scan ${esc(k.name)}">${svg('cam')}</button></div>`;}
   h+=`<div class="sec">End of trip</div>
-  <button class="btn pri" data-act="share" ${recs.length?'':'disabled style="opacity:.5"'}>Send all ${recs.length} receipt${recs.length==1?'':'s'}</button>
-  <button class="btn" data-act="zip" ${recs.length?'':'disabled style="opacity:.5"'}>Download as ZIP</button>
-  <div class="hint" style="text-align:center;margin-top:8px">${t.sent?'Last sent '+esc(fmtDT(t.sent)):'Send to Google Drive → “Receipts” folder'}</div>`;
+  <button class="btn pri" data-act="share" ${recs.length?'':'disabled'}>${svg('send',20)} ${recs.length==1?'Send 1 receipt':`Send all ${recs.length} receipts`}</button>
+  <button class="btn" data-act="zip" ${recs.length?'':'disabled'}>${svg('zip',20)} Download as ZIP</button>
+  <div class="hint" style="text-align:center;margin-top:8px">${t.sent?'Last sent '+esc(fmtDT(t.sent)):'Send to Google Drive → “Jet Receipts” folder'}</div>`;
   return h;
 };
 BIND.trip=c=>{$('#view').onclick=async e=>{const a=e.target.closest('[data-act]');if(!a)return;const act=a.dataset.act;
@@ -210,7 +242,7 @@ BIND.trip=c=>{$('#view').onclick=async e=>{const a=e.target.closest('[data-act]'
 VIEWS.cat=async c=>{
   const t=await dbGet('trips',c.id);setTitle(`${t.number} · ${c.cat}`);
   const recs=(await byTrip(c.id)).filter(r=>r.cat===c.cat).sort((a,b)=>a.created-b.created);
-  let h=`<div class="row2" style="margin-bottom:14px"><button class="btn pri" data-act="scan" style="margin:0">📷 Scan</button><button class="btn" data-act="gal" style="margin:0">🖼️ Screenshot / PDF</button></div>`;
+  let h=`<div class="row2" style="margin-bottom:14px"><button class="btn pri" data-act="scan" style="margin:0">${svg('cam')} Scan</button><button class="btn" data-act="gal" style="margin:0">${svg('img')} Screenshot / PDF</button></div>`;
   if(!recs.length)h+=`<div class="empty">No ${esc(c.cat.toLowerCase())} receipts yet.</div>`;
   h+='<div class="grid">';
   recs.forEach((r,i)=>{const p=r.pages[0];const pc=r.pages.length;
@@ -252,13 +284,13 @@ VIEWS.settings=async()=>{
   let est='';try{const e=await navigator.storage.estimate();est=`${(e.usage/1048576).toFixed(1)} MB used on this phone`;}catch(e){}
   return `<div class="sec" style="margin-top:0">Categories</div>
   <textarea id="cats" style="min-height:150px">${esc(LS.get('cats',DEFAULT_CATS).join('\n'))}</textarea>
-  <div class="hint">One per line, emoji first if you like. Renaming doesn't move receipts already filed.</div>
+  <div class="hint">One per line. Icons are picked automatically from the name. Renaming doesn't move receipts already filed.</div>
   <div class="sec">Claim form details</div>
   <div class="hint">Added to the trip summary so the NAG form can be filled for you. Bank/wire details are deliberately not stored here.</div>
   ${f('payee','Name or entity to be paid','')}${f('name','Crewmember name','')}${f('email','Email','')}
   ${f('phone','Contact number','')}${f('address','Mailing address','',true)}${f('rate','Daily rate (USD)','750')}
   <button class="btn pri" id="sSave">Save</button>
-  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-6</div>`;
+  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-8</div>`;
 };
 BIND.settings=()=>{$('#sSave').onclick=()=>{
   const lines=$('#cats').value.split('\n').map(s=>s.trim()).filter(Boolean);LS.set('cats',lines.length?lines:DEFAULT_CATS);
