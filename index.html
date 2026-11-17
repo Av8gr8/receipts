@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08234e">
+<meta name="app-version" content="2026-11-17-5">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Jet Receipts</title>
+<style>
+:root{--bg:#11161c;--card:#1b232c;--card2:#232d38;--line:#2e3a47;--tx:#e8edf2;--mut:#8b9aab;--acc:#f5a623;--ok:#3ecf8e;--bad:#ff5d5d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;padding:10px 8px;padding-top:max(10px,env(safe-area-inset-top));background:var(--bg);border-bottom:1px solid var(--line)}
+header h1{flex:1;margin:0;font-size:19px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{background:none;border:0;color:var(--tx);font-size:26px;width:44px;height:44px;border-radius:10px}
+.ib:active{background:var(--card)}
+main{padding:14px 14px 120px;max-width:640px;margin:0 auto}
+button{font:inherit}
+.btn{display:block;width:100%;padding:15px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx);font-weight:600;font-size:16px;margin-top:10px}
+.btn:active{filter:brightness(1.2)}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#1a1300}
+.btn.bad{color:var(--bad)}
+.row2{display:flex;gap:10px}.row2>.btn{flex:1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.trip .num{font-size:20px;font-weight:700;letter-spacing:.3px}
+.mut{color:var(--mut);font-size:14px}
+.empty{text-align:center;color:var(--mut);padding:40px 10px}
+.cat{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 8px 8px 14px;margin-bottom:8px;min-height:66px}
+.cat .ico{font-size:26px;width:32px;text-align:center}
+.cat .nm{flex:1;font-weight:600;font-size:17px}
+.cat .ct{min-width:30px;text-align:center;color:var(--mut);font-weight:600}
+.cat .ct.has{color:var(--acc)}
+.scan{width:58px;height:50px;border-radius:12px;border:0;background:var(--acc);color:#1a1300;font-size:24px}
+.scan:active{filter:brightness(1.15)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.th{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--card2);border:1px solid var(--line)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th .pdf{display:flex;align-items:center;justify-content:center;height:100%;font-weight:700;color:var(--mut)}
+.th .lb{position:absolute;left:0;right:0;bottom:0;padding:3px 6px;font-size:12px;background:rgba(0,0,0,.65)}
+.pg{width:100%;border-radius:10px;display:block;margin-bottom:6px;background:#fff}
+label{display:block;font-size:13px;color:var(--mut);margin:12px 0 5px}
+input,textarea,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--tx);font:inherit}
+textarea{min-height:70px;resize:vertical}
+.hint{font-size:12px;color:var(--mut);margin-top:4px}
+.sec{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);margin:22px 0 8px}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:90%;text-align:center}
+#toast.on{opacity:1}
+#editor{position:fixed;inset:0;z-index:20;background:#000;display:flex;flex-direction:column}
+#editor[hidden]{display:none}
+#edWrap{flex:1;position:relative;overflow:hidden;touch-action:none}
+#edCanvas{position:absolute;inset:0;width:100%;height:100%}
+.edBar{display:flex;gap:8px;padding:8px 10px;background:#0b0e12}
+.edBar:last-child{padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.edBar button{flex:1;padding:13px 4px;border-radius:10px;border:1px solid #2a333d;background:#1b232c;color:#fff;font-weight:600;font-size:15px}
+.edBar button.pri{background:var(--acc);border-color:var(--acc);color:#1a1300}
+#busy{position:fixed;inset:0;z-index:40;background:#0008;display:flex;align-items:center;justify-content:center;font-weight:600}
+#busy[hidden]{display:none}
+</style>
+</head>
+<body>
+<header><button class="ib" id="backBtn" aria-label="Back">‹</button><h1 id="title">Jet Receipts</h1><button class="ib" id="setBtn" aria-label="Settings">⚙︎</button></header>
+<main id="view"></main>
+
+<div id="editor" hidden>
+  <div id="edWrap"><canvas id="edCanvas"></canvas></div>
+  <div class="edBar">
+    <button data-ed="retake">Retake</button>
+    <button data-ed="rotate">⟳ Rotate</button>
+    <button data-ed="mode" id="modeBtn">Colour</button>
+    <button data-ed="full">Full</button>
+  </div>
+  <div class="edBar">
+    <button data-ed="page">+ Page</button>
+    <button data-ed="next">Save + next</button>
+    <button data-ed="save" class="pri">Save</button>
+  </div>
+</div>
+<div id="busy" hidden>Working…</div>
+<input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+<input type="file" id="galIn" accept="image/*,application/pdf" multiple hidden>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ============ Storage ============ */
+let db;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('receipts',1);
+  r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('trips',{keyPath:'id'});d.createObjectStore('receipts',{keyPath:'id'}).createIndex('trip','tripId');};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+const rq=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
+const st=(s,m)=>db.transaction(s,m||'readonly').objectStore(s);
+const dbPut=(s,o)=>rq(st(s,'readwrite').put(o));
+const dbGet=(s,k)=>rq(st(s).get(k));
+const dbDel=(s,k)=>rq(st(s,'readwrite').delete(k));
+const dbAll=s=>rq(st(s).getAll());
+const byTrip=id=>rq(st('receipts').index('trip').getAll(id));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+const DEFAULT_CATS=['🍽 Meals','🚕 Taxi','🏨 Hotel','🥪 Galley Provisions','📄 Other'];
+const LS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function cats(){return LS.get('cats',DEFAULT_CATS).map(s=>{const m=s.trim().match(/^(\S+)\s+(.+)$/);
+  if(m&&/\p{Extended_Pictographic}/u.test(m[1]))return{ico:m[1],name:m[2].trim()};return{ico:'📄',name:s.trim()}}).filter(c=>c.name);}
+const icoFor=n=>(cats().find(c=>c.name===n)||{ico:'📄'}).ico;
+
+/* ============ Helpers ============ */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtD=iso=>{if(!iso)return'';const[y,m,d]=iso.split('-').map(Number);return`${d} ${MON[m-1]} ${y}`;};
+const fmtDT=t=>{const d=new Date(t);return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;};
+const today=()=>{const d=new Date();return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;};
+function tripDays(t){if(!t.start||!t.end)return null;const a=Date.UTC(...t.start.split('-').map((v,i)=>i==1?v-1:+v)),b=Date.UTC(...t.end.split('-').map((v,i)=>i==1?v-1:+v));return b<a?null:Math.round((b-a)/864e5)+1;}
+const safe=s=>String(s).replace(/[^A-Za-z0-9-]+/g,'');
+let tt;function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2400);}
+const busy=on=>$('#busy').hidden=!on;
+let urls=[];const objURL=b=>{const u=URL.createObjectURL(b);urls.push(u);return u;};
+const freeURLs=()=>{urls.forEach(u=>URL.revokeObjectURL(u));urls=[];};
+
+/* ============ Navigation ============ */
+const stack=[{v:'home'}];
+function go(v,p){stack.push({v,...p});history.pushState({d:stack.length},'');render();}
+function back(){if(stack.length>1)history.back();}
+addEventListener('popstate',()=>{
+  if(!$('#editor').hidden){closeEditor();history.pushState({d:stack.length},'');return;}
+  if(stack.length>1){stack.pop();render();}
+});
+$('#backBtn').onclick=back;
+$('#setBtn').onclick=()=>{if(stack[stack.length-1].v!=='settings')go('settings');};
+
+async function render(){
+  freeURLs();const cur=stack[stack.length-1];
+  $('#backBtn').style.visibility=stack.length>1?'visible':'hidden';
+  const fn=VIEWS[cur.v];const html=await fn(cur);
+  $('#view').innerHTML=html;window.scrollTo(0,0);
+  const top=stack[stack.length-1];BIND[top.v]&&BIND[top.v](top);
+}
+const setTitle=t=>$('#title').textContent=t;
+
+/* ============ Views ============ */
+const VIEWS={},BIND={};
+
+VIEWS.home=async()=>{
+  setTitle('Jet Receipts');
+  const trips=(await dbAll('trips')).sort((a,b)=>(b.start||'').localeCompare(a.start||'')||b.created-a.created);
+  const recs=await dbAll('receipts');
+  let h=`<button class="btn pri" data-act="newTrip" style="margin:0 0 16px">+ New trip</button>`;
+  if(!trips.length)h+=`<div class="empty">No trips yet.<br>Start one, then scan receipts into it.</div>`;
+  for(const t of trips){const n=recs.filter(r=>r.tripId===t.id).length,d=tripDays(t);
+    h+=`<div class="card trip" data-act="openTrip" data-id="${t.id}"><div class="num">${esc(t.number)}${t.label?` <span class="mut" style="font-size:16px;font-weight:500">· ${esc(t.label)}</span>`:''}</div>
+    <div class="mut">${t.start?esc(fmtD(t.start)):''}${t.end?' – '+esc(fmtD(t.end)):''}${d?` · ${d} days`:''} · ${n} receipt${n==1?'':'s'}${t.sent?' · <span style="color:var(--ok)">sent</span>':''}</div></div>`;}
+  return h;
+};
+BIND.home=()=>{$('#view').onclick=e=>{const a=e.target.closest('[data-act]');if(!a)return;
+  if(a.dataset.act==='newTrip')go('tripForm',{});
+  if(a.dataset.act==='openTrip')go('trip',{id:a.dataset.id});};};
+
+VIEWS.tripForm=async c=>{
+  const t=c.id?await dbGet('trips',c.id):{number:'',label:'',start:today(),end:''};
+  setTitle(c.id?'Edit trip':'New trip');
+  return `<label>Trip number (YY-FLT#)</label><input id="fNum" value="${esc(t.number)}" placeholder="e.g. 26-100" autocapitalize="characters">
+  <div class="hint">Trip OMD100 flown in 2026 = 26-100</div>
+  <label>Label (optional)</label><input id="fLab" value="${esc(t.label)}" placeholder="e.g. TLS–DPS A321neo delivery">
+  <div class="row2"><div style="flex:1"><label>Left home</label><input type="date" id="fSt" value="${esc(t.start)}"></div>
+  <div style="flex:1"><label>Back home</label><input type="date" id="fEn" value="${esc(t.end)}"></div></div>
+  <div class="hint" id="fDays"></div>
+  <button class="btn pri" id="fSave">${c.id?'Save':'Create trip'}</button>
+  ${c.id?'<button class="btn bad" id="fDel">Delete trip and its receipts</button>':''}`;
+};
+BIND.tripForm=c=>{
+  const upd=()=>{const d=tripDays({start:$('#fSt').value,end:$('#fEn').value});$('#fDays').textContent=d?`Total days door to door: ${d}`:'Set the return date when you get home.';};
+  $('#fSt').oninput=$('#fEn').oninput=upd;upd();
+  $('#fSave').onclick=async()=>{const num=$('#fNum').value.trim().toUpperCase();if(!num){toast('Enter the trip number');return;}
+    const old=c.id?await dbGet('trips',c.id):{id:uid(),created:Date.now()};
+    await dbPut('trips',{...old,number:num,label:$('#fLab').value.trim(),start:$('#fSt').value,end:$('#fEn').value});
+    if(c.id){back();}else{stack.pop();stack.push({v:'trip',id:old.id});render();}};
+  if(c.id)$('#fDel').onclick=async()=>{if(!confirm('Delete this trip and all its receipts from the phone?'))return;
+    for(const r of await byTrip(c.id))await dbDel('receipts',r.id);await dbDel('trips',c.id);
+    stack.length=1;history.replaceState({d:1},'');render();};
+};
+
+VIEWS.trip=async c=>{
+  const t=await dbGet('trips',c.id);if(!t){stack.length=1;return VIEWS.home();}
+  setTitle(t.number);const recs=await byTrip(c.id);const d=tripDays(t);
+  const list=cats();for(const r of recs)if(!list.some(x=>x.name===r.cat))list.push({ico:'📄',name:r.cat});
+  let h=`<div class="card" data-act="edit"><div class="trip"><div class="num">${esc(t.number)}</div></div>
+    ${t.label?`<div>${esc(t.label)}</div>`:''}<div class="mut">${esc(fmtD(t.start))}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${d?` · ${d} days`:''} · tap to edit</div></div>`;
+  for(const k of list){const n=recs.filter(r=>r.cat===k.name).length;
+    h+=`<div class="cat" data-act="openCat" data-cat="${esc(k.name)}"><span class="ico">${k.ico}</span><span class="nm">${esc(k.name)}</span>
+    <span class="ct ${n?'has':''}">${n}</span><button class="scan" data-act="scan" data-cat="${esc(k.name)}" aria-label="Scan ${esc(k.name)}">📷</button></div>`;}
+  h+=`<div class="sec">End of trip</div>
+  <button class="btn pri" data-act="share" ${recs.length?'':'disabled style="opacity:.5"'}>Send all ${recs.length} receipt${recs.length==1?'':'s'}</button>
+  <button class="btn" data-act="zip" ${recs.length?'':'disabled style="opacity:.5"'}>Download as ZIP</button>
+  <div class="hint" style="text-align:center;margin-top:8px">${t.sent?'Last sent '+esc(fmtDT(t.sent)):'Send to Google Drive → “Receipts” folder'}</div>`;
+  return h;
+};
+BIND.trip=c=>{$('#view').onclick=async e=>{const a=e.target.closest('[data-act]');if(!a)return;const act=a.dataset.act;
+  if(act==='scan'){e.stopPropagation();startCapture({tripId:c.id,cat:a.dataset.cat});}
+  else if(act==='openCat')go('cat',{id:c.id,cat:a.dataset.cat});
+  else if(act==='edit')go('tripForm',{id:c.id});
+  else if(act==='share')shareTrip(c.id);
+  else if(act==='zip')zipTrip(c.id);};};
+
+VIEWS.cat=async c=>{
+  const t=await dbGet('trips',c.id);setTitle(`${t.number} · ${c.cat}`);
+  const recs=(await byTrip(c.id)).filter(r=>r.cat===c.cat).sort((a,b)=>a.created-b.created);
+  let h=`<div class="row2" style="margin-bottom:14px"><button class="btn pri" data-act="scan" style="margin:0">📷 Scan</button><button class="btn" data-act="gal" style="margin:0">Gallery / PDF</button></div>`;
+  if(!recs.length)h+=`<div class="empty">No ${esc(c.cat.toLowerCase())} receipts yet.</div>`;
+  h+='<div class="grid">';
+  recs.forEach((r,i)=>{const p=r.pages[0];const pc=r.pages.length;
+    h+=`<div class="th" data-act="open" data-id="${r.id}">${p.type==='application/pdf'?'<div class="pdf">PDF</div>':`<img src="${objURL(p.blob)}" alt="">`}
+    <div class="lb">#${i+1}${pc>1?` · ${pc}p`:''}${r.note?' · '+esc(r.note):''}</div></div>`;});
+  return h+'</div>';
+};
+BIND.cat=c=>{$('#view').onclick=e=>{const a=e.target.closest('[data-act]');if(!a)return;
+  if(a.dataset.act==='scan')startCapture({tripId:c.id,cat:c.cat});
+  if(a.dataset.act==='gal')startGallery({tripId:c.id,cat:c.cat});
+  if(a.dataset.act==='open')go('rec',{rid:a.dataset.id});};};
+
+VIEWS.rec=async c=>{
+  const r=await dbGet('receipts',c.rid);if(!r){stack.pop();return VIEWS[stack[stack.length-1].v](stack[stack.length-1]);}
+  const t=await dbGet('trips',r.tripId);setTitle(`${t.number} · ${r.cat}`);
+  const list=cats().map(k=>k.name);if(!list.includes(r.cat))list.push(r.cat);
+  let h=`<div class="mut" style="margin-bottom:8px">Scanned ${esc(fmtDT(r.created))}</div>`;
+  r.pages.forEach((p,i)=>{h+=p.type==='application/pdf'?`<div class="card">PDF file · ${Math.round(p.blob.size/1024)} KB</div>`:`<img class="pg" src="${objURL(p.blob)}" alt="">`;
+    if(r.pages.length>1)h+=`<button class="btn bad" data-act="delPage" data-i="${i}" style="margin:0 0 12px;padding:9px">Remove page ${i+1}</button>`;});
+  h+=`<button class="btn" data-act="addPage">+ Add page (e.g. hotel folio)</button>
+  <label>Note (optional, helps the claim)</label><textarea id="rNote" placeholder="e.g. crew dinner, 3 pax · or paid by card">${esc(r.note||'')}</textarea>
+  <label>Category</label><select id="rCat">${list.map(n=>`<option ${n===r.cat?'selected':''}>${esc(n)}</option>`).join('')}</select>
+  <button class="btn bad" data-act="del">Delete receipt</button>`;
+  return h;
+};
+BIND.rec=c=>{
+  const save=async patch=>{const r=await dbGet('receipts',c.rid);await dbPut('receipts',{...r,...patch});};
+  $('#rNote').onchange=e=>save({note:e.target.value.trim()});
+  $('#rCat').onchange=e=>{save({cat:e.target.value});toast('Moved to '+e.target.value);};
+  $('#view').onclick=async e=>{const a=e.target.closest('[data-act]');if(!a)return;const r=await dbGet('receipts',c.rid);
+    if(a.dataset.act==='addPage')startCapture({tripId:r.tripId,cat:r.cat,receiptId:r.id});
+    if(a.dataset.act==='delPage'){r.pages.splice(+a.dataset.i,1);await dbPut('receipts',r);render();}
+    if(a.dataset.act==='del'){if(!confirm('Delete this receipt?'))return;await dbDel('receipts',r.id);back();}};
+};
+
+VIEWS.settings=async()=>{
+  setTitle('Settings');const p=LS.get('payee',{});
+  const f=(id,lab,ph,multi)=>`<label>${lab}</label>${multi?`<textarea id="p_${id}" placeholder="${ph}">${esc(p[id]||'')}</textarea>`:`<input id="p_${id}" value="${esc(p[id]||'')}" placeholder="${ph}">`}`;
+  let est='';try{const e=await navigator.storage.estimate();est=`${(e.usage/1048576).toFixed(1)} MB used on this phone`;}catch(e){}
+  return `<div class="sec" style="margin-top:0">Categories</div>
+  <textarea id="cats" style="min-height:150px">${esc(LS.get('cats',DEFAULT_CATS).join('\n'))}</textarea>
+  <div class="hint">One per line, emoji first if you like. Renaming doesn't move receipts already filed.</div>
+  <div class="sec">Claim form details</div>
+  <div class="hint">Added to the trip summary so the NAG form can be filled for you. Bank/wire details are deliberately not stored here.</div>
+  ${f('payee','Name or entity to be paid','')}${f('name','Crewmember name','')}${f('email','Email','')}
+  ${f('phone','Contact number','')}${f('address','Mailing address','',true)}${f('rate','Daily rate (USD)','750')}
+  <button class="btn pri" id="sSave">Save</button>
+  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-5</div>`;
+};
+BIND.settings=()=>{$('#sSave').onclick=()=>{
+  const lines=$('#cats').value.split('\n').map(s=>s.trim()).filter(Boolean);LS.set('cats',lines.length?lines:DEFAULT_CATS);
+  const p={};['payee','name','email','phone','address','rate'].forEach(k=>p[k]=$('#p_'+k).value.trim());LS.set('payee',p);
+  toast('Saved');back();};};
+
+/* ============ Capture ============ */
+let capCtx=null;
+function startCapture(ctx){capCtx=ctx;const i=$('#camIn');i.value='';i.click();}
+function startGallery(ctx){capCtx=ctx;const i=$('#galIn');i.value='';i.click();}
+$('#camIn').onchange=async e=>{const f=e.target.files[0];if(f)openEditor(f);};
+$('#galIn').onchange=async e=>{const fs=[...e.target.files];if(!fs.length)return;
+  if(fs.length===1&&fs[0].type.startsWith('image/'))return openEditor(fs[0]);
+  busy(true);try{for(const f of fs){let page;
+      if(f.type==='application/pdf')page={blob:f,type:'application/pdf'};
+      else{const cv=await fileToCanvas(f,2000);page={blob:await toJpeg(cv),type:'image/jpeg'};}
+      await addPage(capCtx,page);capCtx={...capCtx,receiptId:null};}
+    toast(`Added ${fs.length}`);}finally{busy(false);render();}};
+
+async function addPage(ctx,page){
+  if(ctx.receiptId){const r=await dbGet('receipts',ctx.receiptId);if(r){r.pages.push(page);await dbPut('receipts',r);return r.id;}}
+  const r={id:uid(),tripId:ctx.tripId,cat:ctx.cat,created:Date.now(),note:'',pages:[page]};await dbPut('receipts',r);return r.id;
+}
+
+async function fileToCanvas(file,maxSide){
+  let src;try{src=await createImageBitmap(file,{imageOrientation:'from-image'});}
+  catch(e){src=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=URL.createObjectURL(file);});}
+  const w=src.width,h=src.height,s=Math.min(1,maxSide/Math.max(w,h));
+  const cv=document.createElement('canvas');cv.width=Math.round(w*s);cv.height=Math.round(h*s);
+  cv.getContext('2d').drawImage(src,0,0,cv.width,cv.height);return cv;
+}
+const toJpeg=(cv,q)=>new Promise(r=>cv.toBlob(r,'image/jpeg',q||0.82));
+
+/* ============ Editor ============ */
+const E={src:null,quad:null,mode:LS.get('mode','colour'),view:null,drag:-1};
+const MODES=['colour','grey','bw','original'],MODE_LBL={colour:'Colour',grey:'Grey',bw:'B&W',original:'Original'};
+async function openEditor(file){
+  busy(true);
+  try{E.src=await fileToCanvas(file,2400);E.quad=detectQuad(E.src)||insetQuad(E.src,0.03);}
+  catch(err){busy(false);toast('Could not open that image');return;}
+  busy(false);$('#editor').hidden=false;$('#modeBtn').textContent=MODE_LBL[E.mode];requestAnimationFrame(drawEditor);
+}
+function closeEditor(){$('#editor').hidden=true;E.src=null;}
+function insetQuad(c,f){const w=c.width,h=c.height,dx=w*f,dy=h*f;return[[dx,dy],[w-dx,dy],[w-dx,h-dy],[dx,h-dy]];}
+function drawEditor(){
+  const cv=$('#edCanvas'),wr=$('#edWrap'),dpr=devicePixelRatio||1;
+  cv.width=wr.clientWidth*dpr;cv.height=wr.clientHeight*dpr;const g=cv.getContext('2d');
+  const m=24*dpr,s=Math.min((cv.width-2*m)/E.src.width,(cv.height-2*m)/E.src.height);
+  const ox=(cv.width-E.src.width*s)/2,oy=(cv.height-E.src.height*s)/2;E.view={s,ox,oy,dpr};
+  g.fillStyle='#000';g.fillRect(0,0,cv.width,cv.height);g.drawImage(E.src,ox,oy,E.src.width*s,E.src.height*s);
+  const P=E.quad.map(([x,y])=>[ox+x*s,oy+y*s]);
+  g.save();g.beginPath();g.rect(0,0,cv.width,cv.height);g.moveTo(...P[0]);P.slice(1).forEach(p=>g.lineTo(...p));g.closePath();
+  g.fillStyle='rgba(0,0,0,.55)';g.fill('evenodd');g.restore();
+  g.beginPath();g.moveTo(...P[0]);P.slice(1).forEach(p=>g.lineTo(...p));g.closePath();g.lineWidth=2.5*dpr;g.strokeStyle='#f5a623';g.stroke();
+  P.forEach((p,i)=>{g.beginPath();g.arc(p[0],p[1],(E.drag===i?16:12)*dpr,0,7);g.fillStyle=E.drag===i?'#f5a623':'rgba(245,166,35,.35)';g.fill();g.lineWidth=2.5*dpr;g.strokeStyle='#f5a623';g.stroke();});
+}
+(function(){const cv=$('#edCanvas');
+  const pt=e=>{const r=cv.getBoundingClientRect(),d=E.view.dpr;return[(e.clientX-r.left)*d,(e.clientY-r.top)*d];};
+  cv.addEventListener('pointerdown',e=>{if(!E.view)return;const[x,y]=pt(e);let best=-1,bd=1e9;
+    E.quad.forEach(([qx,qy],i)=>{const dx=E.view.ox+qx*E.view.s-x,dy=E.view.oy+qy*E.view.s-y,d=dx*dx+dy*dy;if(d<bd){bd=d;best=i;}});
+    if(bd<(60*E.view.dpr)**2){E.drag=best;cv.setPointerCapture(e.pointerId);drawEditor();}});
+  cv.addEventListener('pointermove',e=>{if(E.drag<0)return;const[x,y]=pt(e);const v=E.view;
+    E.quad[E.drag]=[Math.max(0,Math.min(E.src.width,(x-v.ox)/v.s)),Math.max(0,Math.min(E.src.height,(y-v.oy)/v.s))];drawEditor();});
+  const up=()=>{if(E.drag>=0){E.drag=-1;drawEditor();}};cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+  addEventListener('resize',()=>{if(!$('#editor').hidden)drawEditor();});
+})();
+document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>edAction(b.dataset.ed));
+async function edAction(a){
+  if(a==='retake'){closeEditor();startCapture(capCtx);return;}
+  if(a==='rotate'){E.src=rotate90(E.src);E.quad=detectQuad(E.src)||insetQuad(E.src,0.03);drawEditor();return;}
+  if(a==='full'){E.quad=insetQuad(E.src,0);drawEditor();return;}
+  if(a==='mode'){E.mode=MODES[(MODES.indexOf(E.mode)+1)%MODES.length];LS.set('mode',E.mode);$('#modeBtn').textContent=MODE_LBL[E.mode];toast(MODE_LBL[E.mode]+' — applied when saved');return;}
+  busy(true);let rid;
+  try{const out=warp(E.src,E.quad,1800);enhance(out,E.mode);rid=await addPage(capCtx,{blob:await toJpeg(out),type:'image/jpeg'});}
+  catch(err){busy(false);toast('Save failed: '+err.message);return;}
+  busy(false);closeEditor();
+  if(a==='page'){capCtx={...capCtx,receiptId:rid};toast('Saved — next page');startCapture(capCtx);}
+  else if(a==='next'){capCtx={...capCtx,receiptId:null};toast('Saved — next receipt');startCapture(capCtx);}
+  else{toast(`Saved to ${capCtx.cat}`);}
+  render();
+}
+function rotate90(c){const o=document.createElement('canvas');o.width=c.height;o.height=c.width;const g=o.getContext('2d');g.translate(o.width,0);g.rotate(Math.PI/2);g.drawImage(c,0,0);return o;}
+
+/* ============ Image processing ============ */
+// Find a bright document on a darker background: Otsu threshold + largest blob + extreme corners.
+function detectQuad(c){
+  const S=240,k=S/Math.max(c.width,c.height),w=Math.max(8,Math.round(c.width*k)),h=Math.max(8,Math.round(c.height*k));
+  const t=document.createElement('canvas');t.width=w;t.height=h;const g=t.getContext('2d');g.drawImage(c,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data,N=w*h,L=new Uint8Array(N),hist=new Float64Array(256);
+  for(let i=0;i<N;i++){const v=(d[i*4]*77+d[i*4+1]*150+d[i*4+2]*29)>>8;L[i]=v;hist[v]++;}
+  let sum=0;for(let i=0;i<256;i++)sum+=i*hist[i];let sB=0,wB=0,best=0,th=128;
+  for(let i=0;i<256;i++){wB+=hist[i];if(!wB)continue;const wF=N-wB;if(!wF)break;sB+=i*hist[i];const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)**2;if(v>best){best=v;th=i;}}
+  const lab=new Int32Array(N),q=new Int32Array(N);let bestLab=0,bestSize=0,cur=0;
+  for(let i=0;i<N;i++){if(L[i]<=th||lab[i])continue;cur++;let hd=0,tl=0;q[tl++]=i;lab[i]=cur;
+    while(hd<tl){const p=q[hd++],x=p%w,y=(p-x)/w;
+      if(x>0&&!lab[p-1]&&L[p-1]>th){lab[p-1]=cur;q[tl++]=p-1;}if(x<w-1&&!lab[p+1]&&L[p+1]>th){lab[p+1]=cur;q[tl++]=p+1;}
+      if(y>0&&!lab[p-w]&&L[p-w]>th){lab[p-w]=cur;q[tl++]=p-w;}if(y<h-1&&!lab[p+w]&&L[p+w]>th){lab[p+w]=cur;q[tl++]=p+w;}}
+    if(tl>bestSize){bestSize=tl;bestLab=cur;}}
+  if(bestSize<N*0.08||bestSize>N*0.93)return null;
+  let tl=[0,0,1e9],tr=[0,0,-1e9],br=[0,0,-1e9],bl=[0,0,1e9];
+  for(let i=0;i<N;i++){if(lab[i]!==bestLab)continue;const x=i%w,y=(i-x)/w,s=x+y,df=x-y;
+    if(s<tl[2])tl=[x,y,s];if(s>br[2])br=[x,y,s];if(df>tr[2])tr=[x,y,df];if(df<bl[2])bl=[x,y,df];}
+  const Q=[tl,tr,br,bl].map(([x,y])=>[Math.min(c.width,(x+0.5)/k),Math.min(c.height,(y+0.5)/k)]);
+  const area=Math.abs(Q.reduce((a,p,i)=>{const n=Q[(i+1)%4];return a+p[0]*n[1]-n[0]*p[1];},0))/2;
+  return area<c.width*c.height*0.06?null:Q;
+}
+// Solve homography mapping output rect -> source quad, then bilinear sample.
+function homography(src,dst){const A=[],b=[];
+  for(let i=0;i<4;i++){const[x,y]=src[i],[u,v]=dst[i];A.push([x,y,1,0,0,0,-u*x,-u*y]);b.push(u);A.push([0,0,0,x,y,1,-v*x,-v*y]);b.push(v);}
+  for(let c=0;c<8;c++){let p=c;for(let r=c+1;r<8;r++)if(Math.abs(A[r][c])>Math.abs(A[p][c]))p=r;[A[c],A[p]]=[A[p],A[c]];[b[c],b[p]]=[b[p],b[c]];
+    for(let r=0;r<8;r++){if(r===c)continue;const f=A[r][c]/A[c][c];for(let k=c;k<8;k++)A[r][k]-=f*A[c][k];b[r]-=f*b[c];}}
+  return b.map((v,i)=>v/A[i][i]).concat(1);}
+function warp(c,quad,maxSide){
+  const D=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+  let W=Math.max(D(quad[0],quad[1]),D(quad[3],quad[2])),H=Math.max(D(quad[0],quad[3]),D(quad[1],quad[2]));
+  const s=Math.min(1,maxSide/Math.max(W,H));W=Math.max(1,Math.round(W*s));H=Math.max(1,Math.round(H*s));
+  const m=homography([[0,0],[W,0],[W,H],[0,H]],quad);
+  const sd=c.getContext('2d').getImageData(0,0,c.width,c.height).data,sw=c.width,sh=c.height;
+  const o=document.createElement('canvas');o.width=W;o.height=H;const og=o.getContext('2d'),od=og.createImageData(W,H),dd=od.data;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const X=x+0.5,Y=y+0.5,z=m[6]*X+m[7]*Y+1;
+    let u=(m[0]*X+m[1]*Y+m[2])/z-0.5,v=(m[3]*X+m[4]*Y+m[5])/z-0.5;
+    u=u<0?0:u>sw-1?sw-1:u;v=v<0?0:v>sh-1?sh-1:v;const x0=u|0,y0=v|0,x1=x0+1<sw?x0+1:x0,y1=y0+1<sh?y0+1:y0,fx=u-x0,fy=v-y0;
+    const i00=(y0*sw+x0)*4,i10=(y0*sw+x1)*4,i01=(y1*sw+x0)*4,i11=(y1*sw+x1)*4,o4=(y*W+x)*4;
+    for(let k=0;k<3;k++){const a=sd[i00+k]+(sd[i10+k]-sd[i00+k])*fx,b2=sd[i01+k]+(sd[i11+k]-sd[i01+k])*fx;dd[o4+k]=a+(b2-a)*fy;}dd[o4+3]=255;}
+  og.putImageData(od,0,0);return o;}
+// Paper-white stretch: dark ink -> black, paper -> white.
+function enhance(c,mode){if(mode==='original')return;
+  const g=c.getContext('2d'),id=g.getImageData(0,0,c.width,c.height),p=id.data,n=p.length/4,hist=new Uint32Array(256);
+  for(let i=0;i<n;i++)hist[(p[i*4]*77+p[i*4+1]*150+p[i*4+2]*29)>>8]++;
+  const pct=f=>{let a=0,t=n*f;for(let i=0;i<256;i++){a+=hist[i];if(a>=t)return i;}return 255;};
+  const lo=pct(0.01),hi=Math.max(lo+30,pct(0.80)),sc=255/(hi-lo),cl=v=>v<0?0:v>255?255:v;
+  for(let i=0;i<n;i++){const j=i*4;
+    if(mode==='colour'){for(let k=0;k<3;k++)p[j+k]=cl((p[j+k]-lo)*sc);}
+    else{const l=cl((((p[j]*77+p[j+1]*150+p[j+2]*29)>>8)-lo)*sc);let v=l;
+      if(mode==='bw'){const x=l/255;v=255/(1+Math.exp(-14*(x-0.62)));}p[j]=p[j+1]=p[j+2]=v;}}
+  g.putImageData(id,0,0);}
+
+/* ============ Export ============ */
+async function tripBundle(tripId){
+  const t=await dbGet('trips',tripId),recs=await byTrip(tripId),order=cats().map(k=>k.name);
+  const catList=[...new Set([...order.filter(n=>recs.some(r=>r.cat===n)),...recs.map(r=>r.cat)])];
+  const files=[],lines=[],num=safe(t.number)||'trip';
+  for(const cat of catList){const rs=recs.filter(r=>r.cat===cat).sort((a,b)=>a.created-b.created);
+    lines.push('',`${cat.toUpperCase()} (${rs.length})`);
+    rs.forEach((r,i)=>{const base=`${num}_${safe(cat)}_${pad(i+1)}`;const names=[];
+      r.pages.forEach((p,k)=>{const ext=p.type==='application/pdf'?'pdf':'jpg';const nm=base+(r.pages.length>1?`_p${k+1}`:'')+'.'+ext;names.push(nm);files.push(new File([p.blob],nm,{type:p.type}));});
+      lines.push(`  ${base}  scanned ${fmtDT(r.created)}${r.pages.length>1?`  (${r.pages.length} pages)`:''}${r.note?`  note: ${r.note}`:''}`);});}
+  const p=LS.get('payee',{}),d=tripDays(t);
+  const txt=[`NAG CREW PAY CLAIM — TRIP ${t.number}`,t.label?`Label: ${t.label}`:null,
+    `Left home: ${t.start||'?'}   Back home: ${t.end||'not set'}   Total days: ${d??'?'}`,
+    `Receipts: ${recs.length}   Exported: ${fmtDT(Date.now())}`,'',
+    'FORM DETAILS',`  Name/entity to be paid: ${p.payee||''}`,`  Crewmember name: ${p.name||''}`,`  Email: ${p.email||''}`,
+    `  Contact number: ${p.phone||''}`,`  Daily rate: ${p.rate||'750'}`,`  Mailing address: ${(p.address||'').replace(/\n/g,', ')}`,
+    '  (Wire instructions: entered by hand on the form)',...lines,''].filter(x=>x!==null).join('\n');
+  files.unshift(new File([txt],`${num}_summary.txt`,{type:'text/plain'}));
+  return{t,files};
+}
+async function shareTrip(id){
+  busy(true);let b;try{b=await tripBundle(id);}finally{busy(false);}
+  const data={files:b.files,title:`Jet Receipts ${b.t.number}`};
+  if(!(navigator.canShare&&navigator.canShare(data))){toast('Sharing not supported here — downloading ZIP');return zipTrip(id);}
+  try{await navigator.share(data);await dbPut('trips',{...b.t,sent:Date.now()});render();}
+  catch(e){if(e.name!=='AbortError'){toast('Share failed — downloading ZIP instead');zipTrip(id);}}
+}
+async function zipTrip(id){
+  busy(true);try{const b=await tripBundle(id);const blob=await makeZip(b.files);
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${safe(b.t.number)||'trip'}_receipts.zip`;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),30000);await dbPut('trips',{...b.t,sent:Date.now()});}
+  finally{busy(false);render();}
+}
+// Minimal store-only ZIP writer (no compression; JPEGs don't compress anyway).
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(u){let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
+async function makeZip(files){
+  const enc=new TextEncoder(),parts=[],cen=[];let off=0;const now=new Date();
+  const dt=((now.getHours()<<11)|(now.getMinutes()<<5)|(now.getSeconds()>>1))&0xFFFF,dd=(((now.getFullYear()-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate())&0xFFFF;
+  for(const f of files){const data=new Uint8Array(await f.arrayBuffer()),name=enc.encode(f.name),crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);
+    h.setUint16(10,dt,true);h.setUint16(12,dd,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,name.length,true);h.setUint16(28,0,true);
+    parts.push(h.buffer,name,data);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);
+    c.setUint16(12,dt,true);c.setUint16(14,dd,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,name.length,true);
+    c.setUint32(42,off,true);cen.push(c.buffer,name);off+=30+name.length+data.length;}
+  const cenSize=cen.reduce((a,b)=>a+(b.byteLength),0),e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cenSize,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cen,e.buffer],{type:'application/zip'});
+}
+
+/* ============ Boot ============ */
+(async()=>{
+  db=await openDB();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
+  history.replaceState({d:1},'');render();
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
