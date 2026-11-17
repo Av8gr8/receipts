@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b0d11" media="(prefers-color-scheme: dark)">
-<meta name="app-version" content="2026-11-17-10">
+<meta name="app-version" content="2026-11-17-14">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -92,6 +92,7 @@ textarea{min-height:70px;resize:vertical}
 <symbol id="i-taxi" viewBox="0 0 24 24"><path d="M5 12l1.5-4.3A2 2 0 0 1 8.4 6.3h7.2a2 2 0 0 1 1.9 1.4L19 12"/><rect x="3" y="12" width="18" height="5.5" rx="2"/><path d="M6 17.5V20M18 17.5V20"/><circle cx="7.5" cy="14.8" r=".6"/><circle cx="16.5" cy="14.8" r=".6"/></symbol>
 <symbol id="i-hotel" viewBox="0 0 24 24"><path d="M3 6v14M3 16h18v4M21 16v-3.5A2.5 2.5 0 0 0 18.5 10H11v6"/><circle cx="7" cy="12.5" r="2"/></symbol>
 <symbol id="i-galley" viewBox="0 0 24 24"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8.5 3.5v2.5M11.5 3.5v2.5"/></symbol>
+<symbol id="i-data" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/><path d="M9.5 11.5a3.5 3.5 0 0 1 5 0M8 9a6 6 0 0 1 8 0"/><circle cx="12" cy="13.8" r=".6"/></symbol>
 <symbol id="i-other" viewBox="0 0 24 24"><path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
 <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 7.5h3L8.6 5h6.8L17 7.5h3a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.6"/></symbol>
 <symbol id="i-img" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><circle cx="9" cy="9.5" r="1.7"/><path d="M20.5 15.5l-4.5-4.5-8.5 9"/></symbol>
@@ -99,6 +100,7 @@ textarea{min-height:70px;resize:vertical}
 <symbol id="i-zip" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></symbol>
 <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/></symbol>
+<symbol id="i-claim" viewBox="0 0 24 24"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M18.5 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9zM5.5 15.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
 </svg>
 <main id="view"></main>
@@ -138,11 +140,15 @@ const dbAll=s=>rq(st(s).getAll());
 const byTrip=id=>rq(st('receipts').index('trip').getAll(id));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
-const DEFAULT_CATS=['Meals','Taxi','Hotel','Galley Provisions','Other'];
+const DEFAULT_CATS=['Meals','Taxi','Hotel','Galley Provisions','Data Plan','Other'];
+// one-time: add Data Plan to a category list the user already saved
+(()=>{try{if(localStorage.getItem('catsV')!=='2'){const raw=localStorage.getItem('cats');if(raw){const l=JSON.parse(raw);
+  if(!l.some(x=>/data/i.test(x))){const i=l.findIndex(x=>/other/i.test(x));l.splice(i<0?l.length:i,0,'Data Plan');localStorage.setItem('cats',JSON.stringify(l));}}
+  localStorage.setItem('catsV','2');}}catch(e){}})();
 const LS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 function cats(){return LS.get('cats',DEFAULT_CATS).map(x=>({name:x.replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u,'').trim()})).filter(c=>c.name).map(c=>({...c,ico:icoKey(c.name)}));}
 function icoKey(n){n=n.toLowerCase();if(/meal|food|restaurant|dinner|lunch|breakfast/.test(n))return'meals';if(/taxi|uber|grab|car|transport|train|bus/.test(n))return'taxi';
-  if(/hotel|accom|lodg|room/.test(n))return'hotel';if(/galley|provision|cater|commiss|water|drink/.test(n))return'galley';return'other';}
+  if(/hotel|accom|lodg|room/.test(n))return'hotel';if(/galley|provision|cater|commiss|water|drink/.test(n))return'galley';if(/data|sim|roam|phone|internet|wifi|esim/.test(n))return'data';return'other';}
 const svg=(k,sz)=>`<svg class="i"${sz?` style="width:${sz}px;height:${sz}px"`:''}><use href="#i-${k}"/></svg>`;
 
 /* ============ Theme ============ */
@@ -160,7 +166,9 @@ const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','De
 const fmtD=iso=>{if(!iso)return'';const[y,m,d]=iso.split('-').map(Number);return`${d} ${MON[m-1]} ${y}`;};
 const fmtDT=t=>{const d=new Date(t);return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;};
 const today=()=>{const d=new Date();return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;};
-function tripDays(t){if(!t.start||!t.end)return null;const a=Date.UTC(...t.start.split('-').map((v,i)=>i==1?v-1:+v)),b=Date.UTC(...t.end.split('-').map((v,i)=>i==1?v-1:+v));return b<a?null:Math.round((b-a)/864e5)+1;}
+function tripDays(t){const o=+t.daysOverride;return o>0?o:calDays(t);}
+const dLbl=t=>{const d=tripDays(t);return d?` · ${d} days${+t.daysOverride>0?' (manual)':''}`:'';};
+function calDays(t){if(!t.start||!t.end)return null;const a=Date.UTC(...t.start.split('-').map((v,i)=>i==1?v-1:+v)),b=Date.UTC(...t.end.split('-').map((v,i)=>i==1?v-1:+v));return b<a?null:Math.round((b-a)/864e5)+1;}
 const safe=s=>String(s).replace(/[^A-Za-z0-9-]+/g,'');
 let tt;function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2400);}
 const busy=on=>$('#busy').hidden=!on;
@@ -194,22 +202,24 @@ VIEWS.home=async()=>{
   setTitle('Jet Receipts',true);
   const trips=(await dbAll('trips')).sort((a,b)=>(b.start||'').localeCompare(a.start||'')||b.created-a.created);
   const recs=await dbAll('receipts');
-  let h=`<button class="btn pri" data-act="newTrip" style="margin:0 0 18px">${svg('plus')} New trip</button>`;
+  const claimable=trips.filter(t=>recs.some(r=>r.tripId===t.id));
+  let h=`<div class="row2" style="margin-bottom:18px"><button class="btn pri" data-act="newTrip" style="margin:0">${svg('plus')} New trip</button>${claimable.length?`<button class="btn" data-act="claim" style="margin:0">${svg('claim')} Claim</button>`:''}</div>`;
   if(!trips.length)h+=`<div class="empty">No trips yet.<br>Start one, then scan receipts into it.</div>`;
-  for(const t of trips){const n=recs.filter(r=>r.tripId===t.id).length,d=tripDays(t);
+  for(const t of trips){const rr=recs.filter(r=>r.tripId===t.id),n=rr.length,d=tripDays(t);let pg=0,un=0;rr.forEach(r=>r.pages.forEach(p=>{pg++;if(!pageSent(t,r,p))un++;}));
     h+=`<div class="card trip" data-act="openTrip" data-id="${t.id}"><div style="display:flex;align-items:center;gap:10px"><div class="num" style="flex:1">${esc(t.number)}</div>
     <span class="cat" style="all:unset"><span class="ct ${n?'has':''}" style="min-width:26px;height:26px;padding:0 9px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;${n?'background:var(--grn);color:#fff':'background:var(--card2);color:var(--mut)'}">${n}</span></span><button class="del" data-act="delTrip" data-id="${t.id}" aria-label="Delete trip ${esc(t.number)}">${svg('trash',20)}</button></div>
     ${t.label?`<div style="margin-top:2px">${esc(t.label)}</div>`:''}
-    <div class="chip">${svg('cal',15)} ${t.start?esc(fmtD(t.start)):''}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${d?` · ${d} days`:''}${t.sent?' · <span style="color:var(--grn)">sent</span>':''}</div></div>`;}
+    <div class="chip">${svg('cal',15)} ${t.start?esc(fmtD(t.start)):''}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${dLbl(t)}${!pg?'':un?` · <span style="color:var(--acc);font-weight:600">${un} not sent</span>`:t.claimAsked?' · <span style="color:var(--grn)">claim requested</span>':' · <span style="color:var(--grn)">all sent</span>'}</div></div>`;}
   return h;
 };
 BIND.home=()=>{$('#view').onclick=e=>{const a=e.target.closest('[data-act]');if(!a)return;
   if(a.dataset.act==='newTrip')go('tripForm',{});
+  if(a.dataset.act==='claim')go('claim',{});
   if(a.dataset.act==='openTrip')go('trip',{id:a.dataset.id});
   if(a.dataset.act==='delTrip'){e.stopPropagation();deleteTrip(a.dataset.id);}};};
 async function deleteTrip(id){
   const t=await dbGet('trips',id);if(!t)return;const rs=await byTrip(id);
-  const msg=`Delete trip ${t.number}${rs.length?` and its ${rs.length} receipt${rs.length==1?'':'s'}`:''}?`+(rs.length&&!t.sent?'\n\nThese receipts have NOT been sent yet.':'')+'\n\nThis can\'t be undone.';
+  const msg=`Delete trip ${t.number}${rs.length?` and its ${rs.length} receipt${rs.length==1?'':'s'}`:''}?`+(await (async()=>{const S=await tripStatus(id);return S.unsent?`\n\n${S.unsent} of these have NOT been sent to Drive yet.`:'';})())+'\n\nThis can\'t be undone.';
   if(!confirm(msg))return;
   for(const r of rs)await dbDel('receipts',r.id);await dbDel('trips',id);toast(`Deleted ${t.number}`);render();}
 
@@ -222,15 +232,17 @@ VIEWS.tripForm=async c=>{
   <div class="row2"><div style="flex:1"><label>Left home</label><input type="date" id="fSt" value="${esc(t.start)}"></div>
   <div style="flex:1"><label>Back home</label><input type="date" id="fEn" value="${esc(t.end)}"></div></div>
   <div class="hint" id="fDays"></div>
+  <label>Days to claim (optional)</label><input type="number" inputmode="numeric" min="1" step="1" id="fOv" value="${esc(t.daysOverride||'')}">
+  <div class="hint">Leave blank to use the door-to-door count. Fill in to override, e.g. when you can double-claim days.</div>
   <button class="btn pri" id="fSave">${c.id?'Save':'Create trip'}</button>
   ${c.id?'<button class="btn bad" id="fDel">Delete trip and its receipts</button>':''}`;
 };
 BIND.tripForm=c=>{
-  const upd=()=>{const d=tripDays({start:$('#fSt').value,end:$('#fEn').value});$('#fDays').textContent=d?`Total days door to door: ${d}`:'Set the return date when you get home.';};
+  const upd=()=>{const d=calDays({start:$('#fSt').value,end:$('#fEn').value});$('#fDays').textContent=d?`Door to door: ${d} days`:'Set the return date when you get home.';$('#fOv').placeholder=d?String(d):'';};
   $('#fSt').oninput=$('#fEn').oninput=upd;upd();
   $('#fSave').onclick=async()=>{const num=$('#fNum').value.trim().toUpperCase();if(!num){toast('Enter the trip number');return;}
     const old=c.id?await dbGet('trips',c.id):{id:uid(),created:Date.now()};
-    await dbPut('trips',{...old,number:num,label:$('#fLab').value.trim(),start:$('#fSt').value,end:$('#fEn').value});
+    await dbPut('trips',{...old,number:num,label:$('#fLab').value.trim(),start:$('#fSt').value,end:$('#fEn').value,daysOverride:(+$('#fOv').value>0?Math.round(+$('#fOv').value):null)});
     if(c.id){back();}else{stack.pop();stack.push({v:'trip',id:old.id});render();}};
   if(c.id)$('#fDel').onclick=async()=>{const before=await dbGet('trips',c.id);await deleteTrip(c.id);
     if(before&&!(await dbGet('trips',c.id))){stack.length=1;history.replaceState({d:1},'');render();}};
@@ -241,15 +253,21 @@ VIEWS.trip=async c=>{
   setTitle(t.number);const recs=await byTrip(c.id);const d=tripDays(t);
   const list=cats();for(const r of recs)if(!list.some(x=>x.name===r.cat))list.push({ico:icoKey(r.cat),name:r.cat});
   let h=`<div class="hero" data-act="edit"><div class="mut" style="font-size:12px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600">Trip</div><div class="num">${esc(t.number)}</div>
-    ${t.label?`<div style="margin-top:2px">${esc(t.label)}</div>`:''}<div class="chip">${svg('cal',15)} ${esc(fmtD(t.start))}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${d?` · ${d} days`:''} <span style="opacity:.7">· Edit</span></div></div>
+    ${t.label?`<div style="margin-top:2px">${esc(t.label)}</div>`:''}<div class="chip">${svg('cal',15)} ${esc(fmtD(t.start))}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${dLbl(t)} <span style="opacity:.7">· Edit</span></div></div>
   <div class="sec" style="margin-top:0">Categories</div>`;
   for(const k of list){const n=recs.filter(r=>r.cat===k.name).length;
     h+=`<div class="cat" data-act="openCat" data-cat="${esc(k.name)}"><span class="ico">${svg(k.ico)}</span><span class="nm">${esc(k.name)}</span>
     <span class="ct ${n?'has':''}">${n}</span><button class="scan gal" data-act="gal" data-cat="${esc(k.name)}" aria-label="Import ${esc(k.name)} screenshot">${svg('img')}</button><button class="scan" data-act="scan" data-cat="${esc(k.name)}" aria-label="Scan ${esc(k.name)}">${svg('cam')}</button></div>`;}
-  h+=`<div class="sec">End of trip</div>
-  <button class="btn pri" data-act="share" ${recs.length?'':'disabled'}>${svg('send',20)} ${recs.length==1?'Send 1 receipt':`Send all ${recs.length} receipts`}</button>
-  <button class="btn" data-act="zip" ${recs.length?'':'disabled'}>${svg('zip',20)} Download as ZIP</button>
-  <div class="hint" style="text-align:center;margin-top:8px">${t.sent?'Last sent '+esc(fmtDT(t.sent)):'Send to Google Drive → “Jet Receipts” folder'}</div>`;
+  const S=await tripStatus(c.id);
+  h+=`<div class="sec">Send to Drive</div>`;
+  if(!S.total)h+=`<button class="btn pri" disabled>${svg('send',20)} No receipts yet</button>`;
+  else if(!S.sentAny)h+=`<button class="btn pri" data-act="share">${svg('send',20)} ${S.total==1?'Send 1 receipt':`Send all ${S.total} receipts`}</button>`;
+  else if(S.unsent)h+=`<button class="btn pri" data-act="shareNew">${svg('send',20)} Send ${S.unsent} new</button>
+    <button class="btn" data-act="share">${svg('send',20)} Send all ${S.total} again</button>`;
+  else h+=`<div class="card" style="display:flex;align-items:center;gap:10px;color:var(--grn);font-weight:600;margin:0">${svg('send',20)} All ${S.total} sent</div>
+    <button class="btn" data-act="share">${svg('send',20)} Send all again</button>`;
+  h+=`<button class="btn" data-act="zip" ${S.total?'':'disabled'}>${svg('zip',20)} Download all as ZIP</button>
+  <div class="hint" style="text-align:center;margin-top:8px">${t.sent?'Last sent '+esc(fmtDT(t.sent))+' · ':''}Save to Google Drive → “Jet Receipts” folder</div>`;
   return h;
 };
 BIND.trip=c=>{$('#view').onclick=async e=>{const a=e.target.closest('[data-act]');if(!a)return;const act=a.dataset.act;
@@ -257,7 +275,8 @@ BIND.trip=c=>{$('#view').onclick=async e=>{const a=e.target.closest('[data-act]'
   else if(act==='gal'){e.stopPropagation();startGallery({tripId:c.id,cat:a.dataset.cat});}
   else if(act==='openCat')go('cat',{id:c.id,cat:a.dataset.cat});
   else if(act==='edit')go('tripForm',{id:c.id});
-  else if(act==='share')shareTrip(c.id);
+  else if(act==='share')shareTrip(c.id,false);
+  else if(act==='shareNew')shareTrip(c.id,true);
   else if(act==='zip')zipTrip(c.id);};};
 
 VIEWS.cat=async c=>{
@@ -299,6 +318,34 @@ BIND.rec=c=>{
     if(a.dataset.act==='del'){if(!confirm('Delete this receipt?'))return;await dbDel('receipts',r.id);back();}};
 };
 
+VIEWS.claim=async()=>{
+  setTitle('Claim with Claude');
+  const trips=(await dbAll('trips')).sort((a,b)=>(a.start||'').localeCompare(b.start||'')||a.created-b.created),recs=await dbAll('receipts');
+  let h=`<div class="mut" style="margin-bottom:12px">Pick the trips to claim. Claude reads them from Drive, converts to USD and fills the NAG forms in Chrome on your Mac (Claude app and Chrome open). You submit.</div>`;
+  for(const t of trips){const rr=recs.filter(r=>r.tripId===t.id);if(!rr.length)continue;let un=0;rr.forEach(r=>r.pages.forEach(p=>{if(!pageSent(t,r,p))un++;}));
+    h+=`<label class="cat" style="cursor:pointer;margin:0 0 8px;color:var(--tx);font-size:16px"><input type="checkbox" class="cTrip" value="${t.id}" data-num="${esc(t.number)}" ${t.claimAsked?'':'checked'} style="width:22px;height:22px;accent-color:var(--acc);flex:none">
+    <span class="nm">${esc(t.number)}<span class="mut" style="display:block;font-weight:400;font-size:13px">${rr.length} receipt${rr.length==1?'':'s'}${dLbl(t)}${un?` · <span style="color:var(--bad);font-weight:600">${un} not sent to Drive</span>`:''}${t.claimAsked?` · claim requested ${esc(fmtD(new Date(t.claimAsked).toISOString().slice(0,10)))}`:''}</span></span></label>`;}
+  h+=`<div id="cWarn" class="hint" style="color:var(--bad)"></div>
+  <label>Message to Claude</label><textarea id="cMsg" style="min-height:90px"></textarea>
+  <button class="btn pri" id="cGo">${svg('claim')} Open in Claude</button>
+  <button class="btn" id="cCopy">Copy message</button>
+  <div class="hint" style="text-align:center">“Open in Claude” shows the share menu, pick <b>Claude</b>, then send.</div>`;
+  return h;
+};
+BIND.claim=()=>{
+  const sel=()=>[...document.querySelectorAll('.cTrip:checked')];
+  const upd=()=>{const n=sel().map(x=>x.dataset.num);
+    $('#cMsg').value=n.length?`/nag-claim ${n.join(' ')}\nPlease claim my NAG trip${n.length>1?'s':''} ${n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]:n[0]} from Jet Receipts.`:'';
+    const bad=sel().filter(x=>x.closest('label').innerText.includes('not sent'));
+    $('#cWarn').textContent=bad.length?`Send the missing receipts to Drive first (${bad.map(x=>x.dataset.num).join(', ')}), or Claude won't see them.`:'';
+    $('#cGo').disabled=$('#cCopy').disabled=!n.length;};
+  document.querySelectorAll('.cTrip').forEach(c=>c.onchange=upd);upd();
+  const mark=async()=>{for(const c of sel()){const t=await dbGet('trips',c.value);await dbPut('trips',{...t,claimAsked:Date.now()});}};
+  $('#cCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('#cMsg').value);toast('Copied — paste it into Claude');await mark();}catch(e){toast('Copy failed — select the text and copy');}};
+  $('#cGo').onclick=async()=>{const text=$('#cMsg').value;
+    if(navigator.share){try{await navigator.share({text});await mark();toast('Sent to Claude');back();return;}catch(e){if(e.name==='AbortError')return;}}
+    location.href='https://claude.ai/new?q='+encodeURIComponent(text);await mark();};
+};
 VIEWS.settings=async()=>{
   setTitle('Settings');const p=LS.get('payee',{});
   const f=(id,lab,ph,multi)=>`<label>${lab}</label>${multi?`<textarea id="p_${id}" placeholder="${ph}">${esc(p[id]||'')}</textarea>`:`<input id="p_${id}" value="${esc(p[id]||'')}" placeholder="${ph}">`}`;
@@ -315,7 +362,7 @@ VIEWS.settings=async()=>{
   ${f('payee','Name or entity to be paid','')}${f('name','Crewmember name','')}${f('email','Email','')}
   ${f('phone','Contact number','')}${f('address','Mailing address','',true)}${f('rate','Daily rate (USD)','750')}
   <button class="btn pri" id="sSave">Save</button>
-  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-10</div>`;
+  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-14</div>`;
 };
 BIND.settings=()=>{$('#themeSeg').onclick=e=>{const b=e.target.closest('[data-th]');if(!b)return;LS.set('theme',b.dataset.th);applyTheme();
   document.querySelectorAll('#themeSeg button').forEach(x=>x.classList.toggle('on',x===b));};
@@ -337,6 +384,7 @@ $('#galIn').onchange=async e=>{const fs=[...e.target.files];if(!fs.length)return
     toast(fs.length===1?`Added to ${capCtx.cat}`:`Added ${fs.length} to ${capCtx.cat}`);}finally{busy(false);render();}};
 
 async function addPage(ctx,page){
+  page={...page,sent:false};
   if(ctx.receiptId){const r=await dbGet('receipts',ctx.receiptId);if(r){r.pages.push(page);await dbPut('receipts',r);return r.id;}}
   const r={id:uid(),tripId:ctx.tripId,cat:ctx.cat,created:Date.now(),note:'',pages:[page]};await dbPut('receipts',r);return r.id;
 }
@@ -455,36 +503,55 @@ function enhance(c,mode){if(mode==='original')return;
   g.putImageData(id,0,0);}
 
 /* ============ Export ============ */
-async function tripBundle(tripId){
-  const t=await dbGet('trips',tripId),recs=await byTrip(tripId),order=cats().map(k=>k.name);
+// A page counts as sent if flagged, or (for receipts from before per-page tracking) if it existed when the trip was last sent.
+const pageSent=(t,r,p)=>p.sent!==undefined?!!p.sent:!!(t.sent&&r.created<=t.sent);
+async function tripStatus(tripId){const t=await dbGet('trips',tripId),recs=await byTrip(tripId);let total=0,unsent=0;
+  for(const r of recs)for(const p of r.pages){total++;if(!pageSent(t,r,p))unsent++;}return{total,unsent,sentAny:total>unsent};}
+// Gives every receipt a permanent number within its category, so file names never change between sends.
+async function assignSeq(t,recs,order){const mx=t.seqMax||{};
   const catList=[...new Set([...order.filter(n=>recs.some(r=>r.cat===n)),...recs.map(r=>r.cat)])];
-  const files=[],lines=[],num=safe(t.number)||'trip';
   for(const cat of catList){const rs=recs.filter(r=>r.cat===cat).sort((a,b)=>a.created-b.created);
+    const used=new Set(rs.filter(r=>r.seq&&r.seqCat===cat).map(r=>r.seq));let next=Math.max(mx[cat]||0,...used,0)+1;
+    for(const r of rs){if(r.seq&&r.seqCat===cat)continue;while(used.has(next))next++;r.seq=next;r.seqCat=cat;used.add(next);await dbPut('receipts',r);}
+    mx[cat]=Math.max(mx[cat]||0,...used,0);}
+  t.seqMax=mx;await dbPut('trips',t);return catList;}
+async function tripBundle(tripId,onlyNew){
+  const t=await dbGet('trips',tripId),recs=await byTrip(tripId),order=cats().map(k=>k.name);
+  const catList=await assignSeq(t,recs,order);
+  const files=[],lines=[],num=safe(t.number)||'trip',marks=[];
+  for(const cat of catList){const rs=recs.filter(r=>r.cat===cat).sort((a,b)=>a.seq-b.seq);
     lines.push('',`${cat.toUpperCase()} (${rs.length})`);
-    rs.forEach((r,i)=>{const base=`${num}_${safe(cat)}_${pad(i+1)}`;const names=[];
-      r.pages.forEach((p,k)=>{const ext=p.type==='application/pdf'?'pdf':'jpg';const nm=base+(r.pages.length>1?`_p${k+1}`:'')+'.'+ext;names.push(nm);files.push(new File([p.blob],nm,{type:p.type}));});
-      lines.push(`  ${base}  scanned ${fmtDT(r.created)}${r.pages.length>1?`  (${r.pages.length} pages)`:''}${r.note?`  note: ${r.note}`:''}`);});}
+    for(const r of rs){const base=`${num}_${safe(cat)}_${pad(r.seq)}`;
+      r.pages.forEach((p,k)=>{const ext=p.type==='application/pdf'?'pdf':'jpg';const nm=base+(k?`_p${k+1}`:'')+'.'+ext;
+        if(!onlyNew||!pageSent(t,r,p)){files.push(new File([p.blob],nm,{type:p.type}));marks.push([r.id,k]);}});
+      lines.push(`  ${base}  scanned ${fmtDT(r.created)}${r.pages.length>1?`  (${r.pages.length} pages: ${base}.jpg + _p2…)`:''}${r.note?`  note: ${r.note}`:''}`);}}
   const p=LS.get('payee',{}),d=tripDays(t);
   const txt=[`NAG CREW PAY CLAIM — TRIP ${t.number}`,t.label?`Label: ${t.label}`:null,
-    `Left home: ${t.start||'?'}   Back home: ${t.end||'not set'}   Total days: ${d??'?'}`,
-    `Receipts: ${recs.length}   Exported: ${fmtDT(Date.now())}`,'',
+    `Left home: ${t.start||'?'}   Back home: ${t.end||'not set'}   Total days to claim: ${d??'?'}${+t.daysOverride>0?`  (MANUAL OVERRIDE — door-to-door count is ${calDays(t)??'?'})`:''}`,
+    `Receipts: ${recs.length}   Exported: ${fmtDT(Date.now())}${onlyNew?'   (this send: new receipts only — earlier ones were sent before)':''}`,'',
     'FORM DETAILS',`  Name/entity to be paid: ${p.payee||''}`,`  Crewmember name: ${p.name||''}`,`  Email: ${p.email||''}`,
     `  Contact number: ${p.phone||''}`,`  Daily rate: ${p.rate||'750'}`,`  Mailing address: ${(p.address||'').replace(/\n/g,', ')}`,
     '  (Wire instructions: entered by hand on the form)',...lines,''].filter(x=>x!==null).join('\n');
   files.unshift(new File([txt],`${num}_summary.txt`,{type:'text/plain'}));
-  return{t,files};
+  return{t,files,marks};
 }
-async function shareTrip(id){
-  busy(true);let b;try{b=await tripBundle(id);}finally{busy(false);}
+async function markSent(b){const now=Date.now(),by={};for(const[id,k]of b.marks)(by[id]=by[id]||[]).push(k);
+  for(const id in by){const r=await dbGet('receipts',id);if(!r)continue;by[id].forEach(k=>{if(r.pages[k])r.pages[k].sent=now;});await dbPut('receipts',r);}
+  // pages already counted as sent by the old trip-level flag get an explicit flag too
+  const t=await dbGet('trips',b.t.id);for(const r of await byTrip(b.t.id)){let ch=false;r.pages.forEach(p=>{if(p.sent===undefined&&pageSent(t,r,p)){p.sent=t.sent;ch=true;}});if(ch)await dbPut('receipts',r);}
+  await dbPut('trips',{...t,sent:now});}
+async function shareTrip(id,onlyNew){
+  busy(true);let b;try{b=await tripBundle(id,onlyNew);}finally{busy(false);}
+  if(b.files.length<2){toast('Nothing new to send');return;}
   const data={files:b.files,title:`Jet Receipts ${b.t.number}`};
-  if(!(navigator.canShare&&navigator.canShare(data))){toast('Sharing not supported here — downloading ZIP');return zipTrip(id);}
-  try{await navigator.share(data);await dbPut('trips',{...b.t,sent:Date.now()});render();}
-  catch(e){if(e.name!=='AbortError'){toast('Share failed — downloading ZIP instead');zipTrip(id);}}
+  if(!(navigator.canShare&&navigator.canShare(data))){toast('Sharing not supported here — downloading ZIP');return zipTrip(id,onlyNew);}
+  try{await navigator.share(data);await markSent(b);toast(`Sent ${b.files.length-1} file${b.files.length==2?'':'s'}`);render();}
+  catch(e){if(e.name!=='AbortError'){toast('Share failed — downloading ZIP instead');zipTrip(id,onlyNew);}}
 }
-async function zipTrip(id){
-  busy(true);try{const b=await tripBundle(id);const blob=await makeZip(b.files);
+async function zipTrip(id,onlyNew){
+  busy(true);try{const b=await tripBundle(id,onlyNew);const blob=await makeZip(b.files);
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${safe(b.t.number)||'trip'}_receipts.zip`;document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href),30000);await dbPut('trips',{...b.t,sent:Date.now()});}
+    setTimeout(()=>URL.revokeObjectURL(a.href),30000);await markSent(b);}
   finally{busy(false);render();}
 }
 // Minimal store-only ZIP writer (no compression; JPEGs don't compress anyway).
