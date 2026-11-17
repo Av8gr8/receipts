@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b0d11" media="(prefers-color-scheme: dark)">
-<meta name="app-version" content="2026-11-17-8">
+<meta name="app-version" content="2026-11-17-9">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -13,9 +13,12 @@
 <style>:root{color-scheme:dark;--bg:#0b0d11;--card:#15181e;--card2:#1e222a;--line:#262b35;--tx:#f2f4f8;--mut:#8a92a2;--acc:#e2b555;--grn:#2bc07c;--ok:#2bc07c;--bad:#ff6b6b;
   --hdr:rgba(11,13,17,.88);--hdrLine:#20242c;--hero:linear-gradient(135deg,#1f2530,#15181e);--heroTx:var(--tx);--heroMut:var(--mut);--heroLine:var(--line);
   --icoBg:rgba(226,181,85,.12);--icoFg:var(--acc);--onAcc:#14100a;--toastBg:#eef1f6;--toastTx:#0b0d11;--shadow:none}
-@media (prefers-color-scheme:light){:root{color-scheme:light;--bg:#f3f5f9;--card:#fff;--card2:#eef1f6;--line:#e2e7ef;--tx:#0b1b36;--mut:#6a7891;--acc:#d4a23c;--grn:#18a565;--ok:#18a565;--bad:#d93c3c;
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){color-scheme:light;--bg:#f3f5f9;--card:#fff;--card2:#eef1f6;--line:#e2e7ef;--tx:#0b1b36;--mut:#6a7891;--acc:#d4a23c;--grn:#18a565;--ok:#18a565;--bad:#d93c3c;
   --hdr:rgba(243,245,249,.88);--hdrLine:#e2e7ef;--hero:linear-gradient(135deg,#0c2347,#1a3f7a);--heroTx:#fff;--heroMut:#b9c6dc;--heroLine:transparent;
   --icoBg:#fbf3e2;--icoFg:#b9861f;--onAcc:#0b1b36;--toastBg:#0b1b36;--toastTx:#fff;--shadow:0 1px 2px rgba(11,27,54,.06)}}
+:root[data-theme=light]{color-scheme:light;--bg:#f3f5f9;--card:#fff;--card2:#eef1f6;--line:#e2e7ef;--tx:#0b1b36;--mut:#6a7891;--acc:#d4a23c;--grn:#18a565;--ok:#18a565;--bad:#d93c3c;
+  --hdr:rgba(243,245,249,.88);--hdrLine:#e2e7ef;--hero:linear-gradient(135deg,#0c2347,#1a3f7a);--heroTx:#fff;--heroMut:#b9c6dc;--heroLine:transparent;
+  --icoBg:#fbf3e2;--icoFg:#b9861f;--onAcc:#0b1b36;--toastBg:#0b1b36;--toastTx:#fff;--shadow:0 1px 2px rgba(11,27,54,.06)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
 svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
@@ -59,6 +62,9 @@ label{display:block;font-size:13px;color:var(--mut);margin:14px 0 6px;font-weigh
 input,textarea,select{width:100%;padding:12px 13px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:inherit}
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acc)}
 textarea{min-height:70px;resize:vertical}
+.seg{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;padding:10px;border:0;border-radius:9px;background:transparent;color:var(--mut);font-weight:600}
+.seg button.on{background:var(--acc);color:var(--onAcc);box-shadow:0 1px 3px rgba(0,0,0,.15)}
 .hint{font-size:12.5px;color:var(--mut);margin-top:6px}
 .sec{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mut);margin:26px 0 10px;font-weight:600}
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--toastBg);color:var(--toastTx);font-weight:600;padding:10px 18px;border-radius:22px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:90%;text-align:center}
@@ -135,6 +141,13 @@ function cats(){return LS.get('cats',DEFAULT_CATS).map(x=>({name:x.replace(/^[\p
 function icoKey(n){n=n.toLowerCase();if(/meal|food|restaurant|dinner|lunch|breakfast/.test(n))return'meals';if(/taxi|uber|grab|car|transport|train|bus/.test(n))return'taxi';
   if(/hotel|accom|lodg|room/.test(n))return'hotel';if(/galley|provision|cater|commiss|water|drink/.test(n))return'galley';return'other';}
 const svg=(k,sz)=>`<svg class="i"${sz?` style="width:${sz}px;height:${sz}px"`:''}><use href="#i-${k}"/></svg>`;
+
+/* ============ Theme ============ */
+function applyTheme(){const t=LS.get('theme','auto'),r=document.documentElement;
+  if(t==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',t);
+  const dark=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelectorAll('meta[name=theme-color]').forEach(m=>{m.removeAttribute('media');m.content=dark?'#0b0d11':'#f3f5f9';});}
+applyTheme();matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
 
 /* ============ Helpers ============ */
 const $=s=>document.querySelector(s);
@@ -282,7 +295,11 @@ VIEWS.settings=async()=>{
   setTitle('Settings');const p=LS.get('payee',{});
   const f=(id,lab,ph,multi)=>`<label>${lab}</label>${multi?`<textarea id="p_${id}" placeholder="${ph}">${esc(p[id]||'')}</textarea>`:`<input id="p_${id}" value="${esc(p[id]||'')}" placeholder="${ph}">`}`;
   let est='';try{const e=await navigator.storage.estimate();est=`${(e.usage/1048576).toFixed(1)} MB used on this phone`;}catch(e){}
-  return `<div class="sec" style="margin-top:0">Categories</div>
+  const th=LS.get('theme','auto');
+  return `<div class="sec" style="margin-top:0">Appearance</div>
+  <div class="seg" id="themeSeg">${[['auto','Auto'],['light','Light'],['dark','Dark']].map(([k,l])=>`<button data-th="${k}" class="${th===k?'on':''}">${l}</button>`).join('')}</div>
+  <div class="hint">Auto follows your phone's light/dark mode.</div>
+  <div class="sec">Categories</div>
   <textarea id="cats" style="min-height:150px">${esc(LS.get('cats',DEFAULT_CATS).join('\n'))}</textarea>
   <div class="hint">One per line. Icons are picked automatically from the name. Renaming doesn't move receipts already filed.</div>
   <div class="sec">Claim form details</div>
@@ -290,9 +307,11 @@ VIEWS.settings=async()=>{
   ${f('payee','Name or entity to be paid','')}${f('name','Crewmember name','')}${f('email','Email','')}
   ${f('phone','Contact number','')}${f('address','Mailing address','',true)}${f('rate','Daily rate (USD)','750')}
   <button class="btn pri" id="sSave">Save</button>
-  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-8</div>`;
+  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-9</div>`;
 };
-BIND.settings=()=>{$('#sSave').onclick=()=>{
+BIND.settings=()=>{$('#themeSeg').onclick=e=>{const b=e.target.closest('[data-th]');if(!b)return;LS.set('theme',b.dataset.th);applyTheme();
+  document.querySelectorAll('#themeSeg button').forEach(x=>x.classList.toggle('on',x===b));};
+  $('#sSave').onclick=()=>{
   const lines=$('#cats').value.split('\n').map(s=>s.trim()).filter(Boolean);LS.set('cats',lines.length?lines:DEFAULT_CATS);
   const p={};['payee','name','email','phone','address','rate'].forEach(k=>p[k]=$('#p_'+k).value.trim());LS.set('payee',p);
   toast('Saved');back();};};
