@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b0d11" media="(prefers-color-scheme: dark)">
-<meta name="app-version" content="2026-11-17-9">
+<meta name="app-version" content="2026-11-17-10">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -42,6 +42,8 @@ button{font:inherit;cursor:pointer}
 .chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mut);margin-top:8px}
 .hero .mut,.hero .chip{color:var(--heroMut)}
 .mut{color:var(--mut);font-size:14px}
+.del{display:flex;align-items:center;justify-content:center;width:36px;height:36px;margin:-6px -8px -6px 0;border:0;border-radius:10px;background:transparent;color:var(--mut)}
+.del:active{background:var(--card2);color:var(--bad)}
 .empty{text-align:center;color:var(--mut);padding:44px 10px}
 .cat{display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 10px 10px 12px;margin-bottom:8px}
 .cat:active{background:var(--card2)}
@@ -96,6 +98,7 @@ textarea{min-height:70px;resize:vertical}
 <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14M21 3l-6.5 18-4.5-7-7-4.5z"/></symbol>
 <symbol id="i-zip" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></symbol>
 <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
 </svg>
 <main id="view"></main>
@@ -194,15 +197,21 @@ VIEWS.home=async()=>{
   let h=`<button class="btn pri" data-act="newTrip" style="margin:0 0 18px">${svg('plus')} New trip</button>`;
   if(!trips.length)h+=`<div class="empty">No trips yet.<br>Start one, then scan receipts into it.</div>`;
   for(const t of trips){const n=recs.filter(r=>r.tripId===t.id).length,d=tripDays(t);
-    h+=`<div class="card trip" data-act="openTrip" data-id="${t.id}"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="num">${esc(t.number)}</div>
-    <span class="cat" style="all:unset"><span class="ct ${n?'has':''}" style="min-width:26px;height:26px;padding:0 9px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;${n?'background:var(--grn);color:#fff':'background:var(--card2);color:var(--mut)'}">${n}</span></span></div>
+    h+=`<div class="card trip" data-act="openTrip" data-id="${t.id}"><div style="display:flex;align-items:center;gap:10px"><div class="num" style="flex:1">${esc(t.number)}</div>
+    <span class="cat" style="all:unset"><span class="ct ${n?'has':''}" style="min-width:26px;height:26px;padding:0 9px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;${n?'background:var(--grn);color:#fff':'background:var(--card2);color:var(--mut)'}">${n}</span></span><button class="del" data-act="delTrip" data-id="${t.id}" aria-label="Delete trip ${esc(t.number)}">${svg('trash',20)}</button></div>
     ${t.label?`<div style="margin-top:2px">${esc(t.label)}</div>`:''}
     <div class="chip">${svg('cal',15)} ${t.start?esc(fmtD(t.start)):''}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${d?` · ${d} days`:''}${t.sent?' · <span style="color:var(--grn)">sent</span>':''}</div></div>`;}
   return h;
 };
 BIND.home=()=>{$('#view').onclick=e=>{const a=e.target.closest('[data-act]');if(!a)return;
   if(a.dataset.act==='newTrip')go('tripForm',{});
-  if(a.dataset.act==='openTrip')go('trip',{id:a.dataset.id});};};
+  if(a.dataset.act==='openTrip')go('trip',{id:a.dataset.id});
+  if(a.dataset.act==='delTrip'){e.stopPropagation();deleteTrip(a.dataset.id);}};};
+async function deleteTrip(id){
+  const t=await dbGet('trips',id);if(!t)return;const rs=await byTrip(id);
+  const msg=`Delete trip ${t.number}${rs.length?` and its ${rs.length} receipt${rs.length==1?'':'s'}`:''}?`+(rs.length&&!t.sent?'\n\nThese receipts have NOT been sent yet.':'')+'\n\nThis can\'t be undone.';
+  if(!confirm(msg))return;
+  for(const r of rs)await dbDel('receipts',r.id);await dbDel('trips',id);toast(`Deleted ${t.number}`);render();}
 
 VIEWS.tripForm=async c=>{
   const t=c.id?await dbGet('trips',c.id):{number:'',label:'',start:today(),end:''};
@@ -223,9 +232,8 @@ BIND.tripForm=c=>{
     const old=c.id?await dbGet('trips',c.id):{id:uid(),created:Date.now()};
     await dbPut('trips',{...old,number:num,label:$('#fLab').value.trim(),start:$('#fSt').value,end:$('#fEn').value});
     if(c.id){back();}else{stack.pop();stack.push({v:'trip',id:old.id});render();}};
-  if(c.id)$('#fDel').onclick=async()=>{if(!confirm('Delete this trip and all its receipts from the phone?'))return;
-    for(const r of await byTrip(c.id))await dbDel('receipts',r.id);await dbDel('trips',c.id);
-    stack.length=1;history.replaceState({d:1},'');render();};
+  if(c.id)$('#fDel').onclick=async()=>{const before=await dbGet('trips',c.id);await deleteTrip(c.id);
+    if(before&&!(await dbGet('trips',c.id))){stack.length=1;history.replaceState({d:1},'');render();}};
 };
 
 VIEWS.trip=async c=>{
@@ -307,7 +315,7 @@ VIEWS.settings=async()=>{
   ${f('payee','Name or entity to be paid','')}${f('name','Crewmember name','')}${f('email','Email','')}
   ${f('phone','Contact number','')}${f('address','Mailing address','',true)}${f('rate','Daily rate (USD)','750')}
   <button class="btn pri" id="sSave">Save</button>
-  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-9</div>`;
+  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-10</div>`;
 };
 BIND.settings=()=>{$('#themeSeg').onclick=e=>{const b=e.target.closest('[data-th]');if(!b)return;LS.set('theme',b.dataset.th);applyTheme();
   document.querySelectorAll('#themeSeg button').forEach(x=>x.classList.toggle('on',x===b));};
