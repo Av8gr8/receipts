@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b0d11" media="(prefers-color-scheme: dark)">
-<meta name="app-version" content="2026-11-17-14">
+<meta name="app-version" content="2026-11-18-1">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -209,7 +209,7 @@ VIEWS.home=async()=>{
     h+=`<div class="card trip" data-act="openTrip" data-id="${t.id}"><div style="display:flex;align-items:center;gap:10px"><div class="num" style="flex:1">${esc(t.number)}</div>
     <span class="cat" style="all:unset"><span class="ct ${n?'has':''}" style="min-width:26px;height:26px;padding:0 9px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;${n?'background:var(--grn);color:#fff':'background:var(--card2);color:var(--mut)'}">${n}</span></span><button class="del" data-act="delTrip" data-id="${t.id}" aria-label="Delete trip ${esc(t.number)}">${svg('trash',20)}</button></div>
     ${t.label?`<div style="margin-top:2px">${esc(t.label)}</div>`:''}
-    <div class="chip">${svg('cal',15)} ${t.start?esc(fmtD(t.start)):''}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${dLbl(t)}${!pg?'':un?` · <span style="color:var(--acc);font-weight:600">${un} not sent</span>`:t.claimAsked?' · <span style="color:var(--grn)">claim requested</span>':' · <span style="color:var(--grn)">all sent</span>'}</div></div>`;}
+    <div class="chip">${svg('cal',15)} ${t.start?esc(fmtD(t.start)):''}${t.end?' – '+esc(fmtD(t.end)):' – ongoing'}${dLbl(t)}${!pg&&!t.dirty?'':un?` · <span style="color:var(--acc);font-weight:600">${un} not sent</span>`:t.dirty?' · <span style="color:var(--acc);font-weight:600">summary not updated</span>':t.claimAsked?' · <span style="color:var(--grn)">claim requested</span>':' · <span style="color:var(--grn)">all sent</span>'}</div></div>`;}
   return h;
 };
 BIND.home=()=>{$('#view').onclick=e=>{const a=e.target.closest('[data-act]');if(!a)return;
@@ -262,6 +262,9 @@ VIEWS.trip=async c=>{
   h+=`<div class="sec">Send to Drive</div>`;
   if(!S.total)h+=`<button class="btn pri" disabled>${svg('send',20)} No receipts yet</button>`;
   else if(!S.sentAny)h+=`<button class="btn pri" data-act="share">${svg('send',20)} ${S.total==1?'Send 1 receipt':`Send all ${S.total} receipts`}</button>`;
+  else if(!S.unsent&&S.dirty)h+=`<button class="btn pri" data-act="shareNew">${svg('send',20)} Send updated summary</button>
+    <div class="hint">A receipt was moved or deleted after sending. This updates the trip's summary in Drive so it isn't claimed twice.</div>
+    <button class="btn" data-act="share">${svg('send',20)} Send all ${S.total} again</button>`;
   else if(S.unsent)h+=`<button class="btn pri" data-act="shareNew">${svg('send',20)} Send ${S.unsent} new</button>
     <button class="btn" data-act="share">${svg('send',20)} Send all ${S.total} again</button>`;
   else h+=`<div class="card" style="display:flex;align-items:center;gap:10px;color:var(--grn);font-weight:600;margin:0">${svg('send',20)} All ${S.total} sent</div>
@@ -305,26 +308,29 @@ VIEWS.rec=async c=>{
   h+=`<button class="btn" data-act="addPage">+ Add page (e.g. hotel folio)</button>
   <label>Note (optional, helps the claim)</label><textarea id="rNote" placeholder="e.g. crew dinner, 3 pax · or paid by card">${esc(r.note||'')}</textarea>
   <label>Category</label><select id="rCat">${list.map(n=>`<option ${n===r.cat?'selected':''}>${esc(n)}</option>`).join('')}</select>
+  <label>Trip</label><select id="rTrip">${(await dbAll('trips')).sort((a,b)=>(b.start||'').localeCompare(a.start||'')).map(x=>`<option value="${x.id}" ${x.id===r.tripId?'selected':''}>${esc(x.number)}${x.label?' · '+esc(x.label):''}${x.start?' · '+esc(fmtD(x.start)):''}</option>`).join('')}</select>
+  <div class="hint">Move this receipt to another trip, e.g. when two trips overlap.</div>
   <button class="btn bad" data-act="del">Delete receipt</button>`;
   return h;
 };
 BIND.rec=c=>{
   const save=async patch=>{const r=await dbGet('receipts',c.rid);await dbPut('receipts',{...r,...patch});};
   $('#rNote').onchange=e=>save({note:e.target.value.trim()});
-  $('#rCat').onchange=e=>{save({cat:e.target.value});toast('Moved to '+e.target.value);};
+  $('#rCat').onchange=async e=>{const r=await dbGet('receipts',c.rid);await relocate(r,{cat:e.target.value});toast('Moved to '+e.target.value);render();};
+  $('#rTrip').onchange=async e=>{const r=await dbGet('receipts',c.rid),to=await dbGet('trips',e.target.value);await relocate(r,{tripId:to.id});toast('Moved to trip '+to.number);render();};
   $('#view').onclick=async e=>{const a=e.target.closest('[data-act]');if(!a)return;const r=await dbGet('receipts',c.rid);
     if(a.dataset.act==='addPage')startCapture({tripId:r.tripId,cat:r.cat,receiptId:r.id});
-    if(a.dataset.act==='delPage'){r.pages.splice(+a.dataset.i,1);await dbPut('receipts',r);render();}
-    if(a.dataset.act==='del'){if(!confirm('Delete this receipt?'))return;await dbDel('receipts',r.id);back();}};
+    if(a.dataset.act==='delPage'){const t=await dbGet('trips',r.tripId),[p]=r.pages.splice(+a.dataset.i,1);if(pageSent(t,r,p))await markDirty(t.id);await dbPut('receipts',r);render();}
+    if(a.dataset.act==='del'){if(!confirm('Delete this receipt?'))return;const t=await dbGet('trips',r.tripId);if(r.pages.some(p=>pageSent(t,r,p)))await markDirty(t.id);await dbDel('receipts',r.id);back();}};
 };
 
 VIEWS.claim=async()=>{
   setTitle('Claim with Claude');
   const trips=(await dbAll('trips')).sort((a,b)=>(a.start||'').localeCompare(b.start||'')||a.created-b.created),recs=await dbAll('receipts');
   let h=`<div class="mut" style="margin-bottom:12px">Pick the trips to claim. Claude reads them from Drive, converts to USD and fills the NAG forms in Chrome on your Mac (Claude app and Chrome open). You submit.</div>`;
-  for(const t of trips){const rr=recs.filter(r=>r.tripId===t.id);if(!rr.length)continue;let un=0;rr.forEach(r=>r.pages.forEach(p=>{if(!pageSent(t,r,p))un++;}));
+  for(const t of trips){const rr=recs.filter(r=>r.tripId===t.id);if(!rr.length)continue;let un=0;rr.forEach(r=>r.pages.forEach(p=>{if(!pageSent(t,r,p))un++;}));const unTxt=un?`${un} not sent to Drive`:t.dirty?'summary not updated in Drive':'';
     h+=`<label class="cat" style="cursor:pointer;margin:0 0 8px;color:var(--tx);font-size:16px"><input type="checkbox" class="cTrip" value="${t.id}" data-num="${esc(t.number)}" ${t.claimAsked?'':'checked'} style="width:22px;height:22px;accent-color:var(--acc);flex:none">
-    <span class="nm">${esc(t.number)}<span class="mut" style="display:block;font-weight:400;font-size:13px">${rr.length} receipt${rr.length==1?'':'s'}${dLbl(t)}${un?` · <span style="color:var(--bad);font-weight:600">${un} not sent to Drive</span>`:''}${t.claimAsked?` · claim requested ${esc(fmtD(new Date(t.claimAsked).toISOString().slice(0,10)))}`:''}</span></span></label>`;}
+    <span class="nm">${esc(t.number)}<span class="mut" style="display:block;font-weight:400;font-size:13px">${rr.length} receipt${rr.length==1?'':'s'}${dLbl(t)}${unTxt?` · <span style="color:var(--bad);font-weight:600">${unTxt}</span>`:''}${t.claimAsked?` · claim requested ${esc(fmtD(new Date(t.claimAsked).toISOString().slice(0,10)))}`:''}</span></span></label>`;}
   h+=`<div id="cWarn" class="hint" style="color:var(--bad)"></div>
   <label>Message to Claude</label><textarea id="cMsg" style="min-height:90px"></textarea>
   <button class="btn pri" id="cGo">${svg('claim')} Open in Claude</button>
@@ -336,7 +342,7 @@ BIND.claim=()=>{
   const sel=()=>[...document.querySelectorAll('.cTrip:checked')];
   const upd=()=>{const n=sel().map(x=>x.dataset.num);
     $('#cMsg').value=n.length?`/nag-claim ${n.join(' ')}\nPlease claim my NAG trip${n.length>1?'s':''} ${n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]:n[0]} from Jet Receipts.`:'';
-    const bad=sel().filter(x=>x.closest('label').innerText.includes('not sent'));
+    const bad=sel().filter(x=>/not sent|not updated/.test(x.closest('label').innerText));
     $('#cWarn').textContent=bad.length?`Send the missing receipts to Drive first (${bad.map(x=>x.dataset.num).join(', ')}), or Claude won't see them.`:'';
     $('#cGo').disabled=$('#cCopy').disabled=!n.length;};
   document.querySelectorAll('.cTrip').forEach(c=>c.onchange=upd);upd();
@@ -362,7 +368,7 @@ VIEWS.settings=async()=>{
   ${f('payee','Name or entity to be paid','')}${f('name','Crewmember name','')}${f('email','Email','')}
   ${f('phone','Contact number','')}${f('address','Mailing address','',true)}${f('rate','Daily rate (USD)','750')}
   <button class="btn pri" id="sSave">Save</button>
-  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-17-14</div>`;
+  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-18-1</div>`;
 };
 BIND.settings=()=>{$('#themeSeg').onclick=e=>{const b=e.target.closest('[data-th]');if(!b)return;LS.set('theme',b.dataset.th);applyTheme();
   document.querySelectorAll('#themeSeg button').forEach(x=>x.classList.toggle('on',x===b));};
@@ -505,8 +511,14 @@ function enhance(c,mode){if(mode==='original')return;
 /* ============ Export ============ */
 // A page counts as sent if flagged, or (for receipts from before per-page tracking) if it existed when the trip was last sent.
 const pageSent=(t,r,p)=>p.sent!==undefined?!!p.sent:!!(t.sent&&r.created<=t.sent);
+async function markDirty(tripId){const t=await dbGet('trips',tripId);if(t)await dbPut('trips',{...t,dirty:true});}
+// Move a receipt to another category and/or trip. It gets a new file name there and must be sent again;
+// if the old copy was already in Drive, the old trip's summary needs re-sending so it is no longer claimed there.
+async function relocate(r,patch){const t=await dbGet('trips',r.tripId);
+  if(r.pages.some(p=>pageSent(t,r,p)))await markDirty(t.id);
+  r.pages.forEach(p=>p.sent=false);delete r.seq;delete r.seqCat;Object.assign(r,patch);await dbPut('receipts',r);}
 async function tripStatus(tripId){const t=await dbGet('trips',tripId),recs=await byTrip(tripId);let total=0,unsent=0;
-  for(const r of recs)for(const p of r.pages){total++;if(!pageSent(t,r,p))unsent++;}return{total,unsent,sentAny:total>unsent};}
+  for(const r of recs)for(const p of r.pages){total++;if(!pageSent(t,r,p))unsent++;}return{total,unsent,sentAny:total>unsent||!!t.sent,dirty:!!t.dirty};}
 // Gives every receipt a permanent number within its category, so file names never change between sends.
 async function assignSeq(t,recs,order){const mx=t.seqMax||{};
   const catList=[...new Set([...order.filter(n=>recs.some(r=>r.cat===n)),...recs.map(r=>r.cat)])];
@@ -539,10 +551,10 @@ async function markSent(b){const now=Date.now(),by={};for(const[id,k]of b.marks)
   for(const id in by){const r=await dbGet('receipts',id);if(!r)continue;by[id].forEach(k=>{if(r.pages[k])r.pages[k].sent=now;});await dbPut('receipts',r);}
   // pages already counted as sent by the old trip-level flag get an explicit flag too
   const t=await dbGet('trips',b.t.id);for(const r of await byTrip(b.t.id)){let ch=false;r.pages.forEach(p=>{if(p.sent===undefined&&pageSent(t,r,p)){p.sent=t.sent;ch=true;}});if(ch)await dbPut('receipts',r);}
-  await dbPut('trips',{...t,sent:now});}
+  await dbPut('trips',{...t,sent:now,dirty:false});}
 async function shareTrip(id,onlyNew){
   busy(true);let b;try{b=await tripBundle(id,onlyNew);}finally{busy(false);}
-  if(b.files.length<2){toast('Nothing new to send');return;}
+  if(b.files.length<2&&!b.t.dirty){toast('Nothing new to send');return;}
   const data={files:b.files,title:`Jet Receipts ${b.t.number}`};
   if(!(navigator.canShare&&navigator.canShare(data))){toast('Sharing not supported here — downloading ZIP');return zipTrip(id,onlyNew);}
   try{await navigator.share(data);await markSent(b);toast(`Sent ${b.files.length-1} file${b.files.length==2?'':'s'}`);render();}
