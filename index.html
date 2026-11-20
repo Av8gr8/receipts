@@ -3,22 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0b0d11" media="(prefers-color-scheme: dark)">
-<meta name="app-version" content="2026-11-20-1">
+<meta name="theme-color" content="#e8dfc8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1d2118" media="(prefers-color-scheme: dark)">
+<meta name="app-version" content="2026-11-20-2">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Jet Receipts</title>
-<style>:root{color-scheme:dark;--bg:#0b0d11;--card:#15181e;--card2:#1e222a;--line:#262b35;--tx:#f2f4f8;--mut:#8a92a2;--acc:#e2b555;--grn:#2bc07c;--ok:#2bc07c;--bad:#ff6b6b;
-  --hdr:rgba(11,13,17,.88);--hdrLine:#20242c;--hero:linear-gradient(135deg,#1f2530,#15181e);--heroTx:var(--tx);--heroMut:var(--mut);--heroLine:var(--line);
-  --icoBg:rgba(226,181,85,.12);--icoFg:var(--acc);--onAcc:#14100a;--toastBg:#eef1f6;--toastTx:#0b0d11;--shadow:none}
-@media (prefers-color-scheme:light){:root:not([data-theme=dark]){color-scheme:light;--bg:#f3f5f9;--card:#fff;--card2:#eef1f6;--line:#e2e7ef;--tx:#0b1b36;--mut:#6a7891;--acc:#d4a23c;--grn:#18a565;--ok:#18a565;--bad:#d93c3c;
-  --hdr:rgba(243,245,249,.88);--hdrLine:#e2e7ef;--hero:linear-gradient(135deg,#0c2347,#1a3f7a);--heroTx:#fff;--heroMut:#b9c6dc;--heroLine:transparent;
-  --icoBg:#fbf3e2;--icoFg:#b9861f;--onAcc:#0b1b36;--toastBg:#0b1b36;--toastTx:#fff;--shadow:0 1px 2px rgba(11,27,54,.06)}}
-:root[data-theme=light]{color-scheme:light;--bg:#f3f5f9;--card:#fff;--card2:#eef1f6;--line:#e2e7ef;--tx:#0b1b36;--mut:#6a7891;--acc:#d4a23c;--grn:#18a565;--ok:#18a565;--bad:#d93c3c;
-  --hdr:rgba(243,245,249,.88);--hdrLine:#e2e7ef;--hero:linear-gradient(135deg,#0c2347,#1a3f7a);--heroTx:#fff;--heroMut:#b9c6dc;--heroLine:transparent;
-  --icoBg:#fbf3e2;--icoFg:#b9861f;--onAcc:#0b1b36;--toastBg:#0b1b36;--toastTx:#fff;--shadow:0 1px 2px rgba(11,27,54,.06)}
+<style>:root{color-scheme:dark;--bg:#1d2118;--card:#272d20;--card2:#323a29;--line:#434d36;--tx:#e8e3cf;--mut:#a3a68b;--acc:#c9a548;--grn:#7f9a3e;--ok:#7f9a3e;--bad:#e8705a;
+  --hdr:rgba(29,33,24,.92);--hdrLine:#38402e;--hero:linear-gradient(135deg,#3e4a2e,#272d20);--heroTx:#e8e3cf;--heroMut:#b6b597;--heroLine:#4b5639;--heroStripe:#c9a548;
+  --icoBg:rgba(201,165,72,.14);--icoFg:#c9a548;--onAcc:#1d2118;--toastBg:#e8e3cf;--toastTx:#1d2118;--shadow:none}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){color-scheme:light;--bg:#e8dfc8;--card:#f3eedf;--card2:#e0d5b8;--line:#c9b98f;--tx:#2a2819;--mut:#6f674d;--acc:#6e5a2f;--grn:#556b2f;--ok:#556b2f;--bad:#b23a26;
+  --hdr:rgba(232,223,200,.92);--hdrLine:#c9b98f;--hero:linear-gradient(135deg,#3f4730,#59603f);--heroTx:#f1ead4;--heroMut:#c9c2a3;--heroLine:transparent;--heroStripe:transparent;
+  --icoBg:#e3d6b2;--icoFg:#5d4b22;--onAcc:#f3eedf;--toastBg:#2a2819;--toastTx:#f3eedf;--shadow:none}}
+:root[data-theme=light]{color-scheme:light;--bg:#e8dfc8;--card:#f3eedf;--card2:#e0d5b8;--line:#c9b98f;--tx:#2a2819;--mut:#6f674d;--acc:#6e5a2f;--grn:#556b2f;--ok:#556b2f;--bad:#b23a26;
+  --hdr:rgba(232,223,200,.92);--hdrLine:#c9b98f;--hero:linear-gradient(135deg,#3f4730,#59603f);--heroTx:#f1ead4;--heroMut:#c9c2a3;--heroLine:transparent;--heroStripe:transparent;
+  --icoBg:#e3d6b2;--icoFg:#5d4b22;--onAcc:#f3eedf;--toastBg:#2a2819;--toastTx:#f3eedf;--shadow:none}
+:root{--rad:4px;--ls:1.4px;--hf:'Roboto Condensed','Arial Narrow',sans-serif;--nf:'Roboto Mono','DejaVu Sans Mono',monospace}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
 svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
@@ -76,12 +77,20 @@ input[type=date]{min-width:0;-webkit-appearance:none;appearance:none}.row2>div{m
 #editor[hidden]{display:none}
 #edWrap{flex:1;position:relative;overflow:hidden;touch-action:none}
 #edCanvas{position:absolute;inset:0;width:100%;height:100%}
-.edBar{display:flex;gap:8px;padding:8px 10px;background:#0b0d11}
+.edBar{display:flex;gap:8px;padding:8px 10px;background:#1d2118}
 .edBar:last-child{padding-bottom:max(10px,env(safe-area-inset-bottom))}
-.edBar button{flex:1;padding:13px 4px;border-radius:12px;border:1px solid #262b35;background:#15181e;color:#fff;font-weight:600;font-size:15px}
-.edBar button.pri{background:#e2b555;border-color:#e2b555;color:#14100a}
+.edBar button{flex:1;padding:13px 4px;border-radius:12px;border:1px solid #434d36;background:#272d20;color:#e8e3cf;font-family:var(--hf);text-transform:uppercase;letter-spacing:1px;border-radius:4px;font-weight:600;font-size:15px}
+.edBar button.pri{background:#c9a548;border-color:#c9a548;color:#1d2118}
 #busy{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600}
 #busy[hidden]{display:none}
+
+/* military look: square-ish corners, stencil-style uppercase labels, mono numbers */
+.btn,.card,.cat,.hero,.scan,input,select,textarea,.th,.cat .ico,.seg,.seg button{border-radius:var(--rad)!important}
+header h1,.sec,.btn,.cat .nm,label,.seg button{text-transform:uppercase;letter-spacing:var(--ls)}
+header h1,.btn,.cat .nm,.sec,.seg button{font-family:var(--hf)}
+.hero .num,.trip .num,.cat .ct,#fNum{font-family:var(--nf)}
+.hero{border-left:4px solid var(--heroStripe)!important}
+.cat .ct.has{color:#fff}
 </style>
 </head>
 <body>
@@ -156,7 +165,7 @@ const svg=(k,sz)=>`<svg class="i"${sz?` style="width:${sz}px;height:${sz}px"`:''
 function applyTheme(){const t=LS.get('theme','auto'),r=document.documentElement;
   if(t==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',t);
   const dark=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);
-  document.querySelectorAll('meta[name=theme-color]').forEach(m=>{m.removeAttribute('media');m.content=dark?'#0b0d11':'#f3f5f9';});}
+  document.querySelectorAll('meta[name=theme-color]').forEach(m=>{m.removeAttribute('media');m.content=dark?'#1d2118':'#e8dfc8';});}
 applyTheme();matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
 
 /* ============ Helpers ============ */
@@ -372,7 +381,7 @@ VIEWS.settings=async()=>{
   ${f('payee','Name or entity to be paid','')}${f('name','Crewmember name','')}${f('email','Email','')}
   ${f('phone','Contact number','')}${f('address','Mailing address','',true)}${f('rate','Daily rate (USD)','750')}
   <button class="btn pri" id="sSave">Save</button>
-  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-20-1</div>`;
+  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-20-2</div>`;
 };
 BIND.settings=()=>{$('#themeSeg').onclick=e=>{const b=e.target.closest('[data-th]');if(!b)return;LS.set('theme',b.dataset.th);applyTheme();
   document.querySelectorAll('#themeSeg button').forEach(x=>x.classList.toggle('on',x===b));};
