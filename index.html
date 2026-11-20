@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b0d11" media="(prefers-color-scheme: dark)">
-<meta name="app-version" content="2026-11-18-1">
+<meta name="app-version" content="2026-11-20-1">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -64,6 +64,7 @@ label{display:block;font-size:13px;color:var(--mut);margin:14px 0 6px;font-weigh
 input,textarea,select{width:100%;padding:12px 13px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:inherit}
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acc)}
 textarea{min-height:70px;resize:vertical}
+input[type=date]{min-width:0;-webkit-appearance:none;appearance:none}.row2>div{min-width:0}
 .seg{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
 .seg button{flex:1;padding:10px;border:0;border-radius:9px;background:transparent;color:var(--mut);font-weight:600}
 .seg button.on{background:var(--acc);color:var(--onAcc);box-shadow:0 1px 3px rgba(0,0,0,.15)}
@@ -229,17 +230,20 @@ VIEWS.tripForm=async c=>{
   return `<label>Trip number (YY-FLT#)</label><input id="fNum" value="${esc(t.number)}" placeholder="e.g. 26-100" autocapitalize="characters">
   <div class="hint">Trip OMD100 flown in 2026 = 26-100</div>
   <label>Label (optional)</label><input id="fLab" value="${esc(t.label)}" placeholder="e.g. TLS–DPS A321neo delivery">
-  <div class="row2"><div style="flex:1"><label>Left home</label><input type="date" id="fSt" value="${esc(t.start)}"></div>
-  <div style="flex:1"><label>Back home</label><input type="date" id="fEn" value="${esc(t.end)}"></div></div>
+  <div class="row2"><div style="flex:1"><label>Start trip</label><input type="date" id="fSt" value="${esc(t.start)}"></div>
+  <div style="flex:1"><label>Finish trip</label><input type="date" id="fEn" value="${esc(t.end)}"></div></div>
   <div class="hint" id="fDays"></div>
   <label>Days to claim (optional)</label><input type="number" inputmode="numeric" min="1" step="1" id="fOv" value="${esc(t.daysOverride||'')}">
-  <div class="hint">Leave blank to use the door-to-door count. Fill in to override, e.g. when you can double-claim days.</div>
+  <div class="hint">Leave blank to use the trip's day count. Fill in to override, e.g. when you can double-claim days.</div>
   <button class="btn pri" id="fSave">${c.id?'Save':'Create trip'}</button>
   ${c.id?'<button class="btn bad" id="fDel">Delete trip and its receipts</button>':''}`;
 };
 BIND.tripForm=c=>{
-  const upd=()=>{const d=calDays({start:$('#fSt').value,end:$('#fEn').value});$('#fDays').textContent=d?`Door to door: ${d} days`:'Set the return date when you get home.';$('#fOv').placeholder=d?String(d):'';};
+  const upd=()=>{const d=calDays({start:$('#fSt').value,end:$('#fEn').value});$('#fDays').textContent=d?`Trip length: ${d} days`:'Set the finish date when the trip ends.';$('#fOv').placeholder=d?String(d):'';};
   $('#fSt').oninput=$('#fEn').oninput=upd;upd();
+  $('#fNum').oninput=e=>{if((e.inputType||'').startsWith('delete'))return;const el=e.target;let v=el.value.toUpperCase().replace(/\s+/g,'').replace(/-{2,}/g,'-');
+    if(/^\d{2}$/.test(v))v+='-';else if(/^\d{2}[^-]/.test(v))v=v.slice(0,2)+'-'+v.slice(2);
+    if(v!==el.value){el.value=v;el.setSelectionRange(v.length,v.length);}};
   $('#fSave').onclick=async()=>{const num=$('#fNum').value.trim().toUpperCase();if(!num){toast('Enter the trip number');return;}
     const old=c.id?await dbGet('trips',c.id):{id:uid(),created:Date.now()};
     await dbPut('trips',{...old,number:num,label:$('#fLab').value.trim(),start:$('#fSt').value,end:$('#fEn').value,daysOverride:(+$('#fOv').value>0?Math.round(+$('#fOv').value):null)});
@@ -368,7 +372,7 @@ VIEWS.settings=async()=>{
   ${f('payee','Name or entity to be paid','')}${f('name','Crewmember name','')}${f('email','Email','')}
   ${f('phone','Contact number','')}${f('address','Mailing address','',true)}${f('rate','Daily rate (USD)','750')}
   <button class="btn pri" id="sSave">Save</button>
-  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-18-1</div>`;
+  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-20-1</div>`;
 };
 BIND.settings=()=>{$('#themeSeg').onclick=e=>{const b=e.target.closest('[data-th]');if(!b)return;LS.set('theme',b.dataset.th);applyTheme();
   document.querySelectorAll('#themeSeg button').forEach(x=>x.classList.toggle('on',x===b));};
@@ -539,7 +543,7 @@ async function tripBundle(tripId,onlyNew){
       lines.push(`  ${base}  scanned ${fmtDT(r.created)}${r.pages.length>1?`  (${r.pages.length} pages: ${base}.jpg + _p2…)`:''}${r.note?`  note: ${r.note}`:''}`);}}
   const p=LS.get('payee',{}),d=tripDays(t);
   const txt=[`NAG CREW PAY CLAIM — TRIP ${t.number}`,t.label?`Label: ${t.label}`:null,
-    `Left home: ${t.start||'?'}   Back home: ${t.end||'not set'}   Total days to claim: ${d??'?'}${+t.daysOverride>0?`  (MANUAL OVERRIDE — door-to-door count is ${calDays(t)??'?'})`:''}`,
+    `Trip start: ${t.start||'?'}   Trip finish: ${t.end||'not set'}   Total days to claim: ${d??'?'}${+t.daysOverride>0?`  (MANUAL OVERRIDE — trip date count is ${calDays(t)??'?'})`:''}`,
     `Receipts: ${recs.length}   Exported: ${fmtDT(Date.now())}${onlyNew?'   (this send: new receipts only — earlier ones were sent before)':''}`,'',
     'FORM DETAILS',`  Name/entity to be paid: ${p.payee||''}`,`  Crewmember name: ${p.name||''}`,`  Email: ${p.email||''}`,
     `  Contact number: ${p.phone||''}`,`  Daily rate: ${p.rate||'750'}`,`  Mailing address: ${(p.address||'').replace(/\n/g,', ')}`,
