@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#e8dfc8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1d2118" media="(prefers-color-scheme: dark)">
-<meta name="app-version" content="2026-11-20-2">
+<meta name="app-version" content="2026-11-26-1">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -381,7 +381,8 @@ VIEWS.settings=async()=>{
   ${f('payee','Name or entity to be paid','')}${f('name','Crewmember name','')}${f('email','Email','')}
   ${f('phone','Contact number','')}${f('address','Mailing address','',true)}${f('rate','Daily rate (USD)','750')}
   <button class="btn pri" id="sSave">Save</button>
-  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>Version 2026-11-20-2</div>`;
+  <div class="sec">About</div><div class="mut">Receipts are stored only on this phone until you send them. ${esc(est)}<br>
+  ${navigator.serviceWorker&&navigator.serviceWorker.controller?'<span style="color:var(--grn);font-weight:600">✓ Saved for offline use</span> — works with no signal or in flight.':'<span style="color:var(--bad);font-weight:600">Not saved for offline use yet</span> — open the app once with internet, then reopen it.'}<br>Version 2026-11-26-1</div>`;
 };
 BIND.settings=()=>{$('#themeSeg').onclick=e=>{const b=e.target.closest('[data-th]');if(!b)return;LS.set('theme',b.dataset.th);applyTheme();
   document.querySelectorAll('#themeSeg button').forEach(x=>x.classList.toggle('on',x===b));};
@@ -601,7 +602,14 @@ async function makeZip(files){
 (async()=>{
   db=await openDB();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
   history.replaceState({d:1},'');render();
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+  // Update check: the app opens from its saved copy, so tell the user when a newer version has been downloaded.
+  if(navigator.onLine)setTimeout(async()=>{try{
+    const cur=document.querySelector('meta[name=app-version]').content;
+    const txt=await (await fetch('index.html?check='+Date.now(),{cache:'no-store'})).text();
+    const m=txt.match(/name="app-version" content="([^"]+)"/);
+    if(m&&m[1]!==cur)toast('Update downloaded — close and reopen Jet Receipts to use it');
+  }catch(e){}},2500);
 })();
 </script>
 </body>
